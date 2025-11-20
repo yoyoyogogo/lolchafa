@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Mini Among Us Firebase v10</title>
+<style>
+  body { 
+    margin:0; 
+    overflow:hidden; 
+    background:#111; 
+    font-family: Arial, sans-serif;
+  }
+  canvas { 
+    background:#1e1e1e; 
+    display:block; 
+    margin:0 auto; 
+  }
+  #loginScreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  #loginBox {
+    background: #2a2a2a;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+    text-align: center;
+  }
+  #loginBox h1 {
+    color: #00ffff;
+    margin-bottom: 30px;
+    font-size: 32px;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  }
+  #loginBox input {
+    width: 250px;
+    padding: 12px;
+    font-size: 16px;
+    border: 2px solid #00ffff;
+    border-radius: 8px;
+    background: #1a1a1a;
+    color: #fff;
+    margin-bottom: 20px;
+  }
+  #loginBox input:focus {
+    outline: none;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+  }
+  #loginBox button {
+    width: 276px;
+    padding: 12px;
+    font-size: 18px;
+    background: #00ffff;
+    border: none;
+    border-radius: 8px;
+    color: #000;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  #loginBox button:hover {
+    background: #00cccc;
+    transform: scale(1.05);
+  }
+  #loginBox button:active {
+    transform: scale(0.95);
+  }
+  .hidden {
+    display: none !important;
+  }
+  #userInfo {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    color: #00ffff;
+    font-size: 14px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px 15px;
+    border-radius: 8px;
+    z-index: 100;
+  }
+  #inventoryBar {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid #00ffff;
+    z-index: 100;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+  }
+  .inventory-slot {
+    width: 60px;
+    height: 60px;
+    background: rgba(50, 50, 50, 0.9);
+    border: 2px solid #666;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 12px;
+    color: #fff;
+    text-align: center;
+    padding: 5px;
+    box-sizing: border-box;
+  }
+  .inventory-slot:hover {
+    border-color: #00ffff;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    transform: scale(1.05);
+  }
+  .inventory-slot.active {
+    border-color: #00ff00;
+    background: rgba(0, 255, 0, 0.2);
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+    transform: scale(1.1);
+  }
+  #chatMessages {
+    position: fixed;
+    bottom: 100px;
+    left: 10px;
+    width: 250px;
+    max-height: 200px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #00ffff;
+    border-radius: 8px;
+    padding: 10px;
+    z-index: 100;
+    color: #fff;
+    font-size: 12px;
+  }
+  #chatInput {
+    position: fixed;
+    bottom: 100px;
+    left: 10px;
+    width: 250px;
+    background: rgba(0, 0, 0, 0.9);
+    border: 2px solid #00ffff;
+    border-radius: 8px;
+    padding: 10px;
+    z-index: 100;
+    display: flex;
+    gap: 5px;
+  }
+  #chatInput.hidden {
+    display: none !important;
+  }
+  #chatInputField {
+    flex: 1;
+    padding: 8px;
+    background: #1a1a1a;
+    border: 1px solid #00ffff;
+    border-radius: 5px;
+    color: #fff;
+    font-size: 12px;
+  }
+  #chatInputField:focus {
+    outline: none;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  }
+  #chatSendBtn {
+    padding: 8px 12px;
+    background: #00ffff;
+    border: none;
+    border-radius: 5px;
+    color: #000;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  #chatSendBtn:hover {
+    background: #00cccc;
+    transform: scale(1.05);
+  }
+  #chatSendBtn:active {
+    transform: scale(0.95);
+  }
+  .chatMsg {
+    margin-bottom: 5px;
+    word-wrap: break-word;
+  }
+  .chatMsg .username {
+    color: #00ffff;
+    font-weight: bold;
+  }
+  #healthBar {
+    position: fixed;
+    top: 60px;
+    left: 10px;
+    width: 200px;
+    height: 30px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #00ffff;
+    border-radius: 15px;
+    padding: 5px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  #healthBarFill {
+    height: 100%;
+    background: linear-gradient(90deg, #00ff00, #00cc00);
+    border-radius: 12px;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.6);
+  }
+  #healthText {
+    color: #00ffff;
+    font-weight: bold;
+    font-size: 14px;
+    min-width: 50px;
+    text-align: right;
+  }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div id="loginBox">
+    <h1>🚀 AMONG US</h1>
+    <input type="text" id="usernameInput" placeholder="Ingresa tu nombre de usuario" maxlength="15">
+    <br>
+    <button id="loginBtn">ENTRAR AL JUEGO</button>
+  </div>
+</div>
+
+<div id="userInfo" class="hidden">
+  Usuario: <span id="currentUser"></span>
+</div>
+
+<div id="healthBar" class="hidden">
+  <div id="healthBarFill" style="width: 100%;"></div>
+  <div id="healthText">500/500</div>
+</div>
+
+<div id="inventoryBar" class="hidden">
+  <div class="inventory-slot active" data-weapon="fist">
+    <div>👊<br>Puño<br><small>Z</small></div>
+  </div>
+  <div class="inventory-slot" data-weapon="sword">
+    <div>⚔️<br>Espada<br><small>C</small></div>
+  </div>
+  <div class="inventory-slot" data-weapon="bow">
+    <div>🏹<br>Arco<br><small>V</small></div>
+  </div>
+  <div class="inventory-slot" data-weapon="fireball">
+    <div>🔥<br>Fuego<br><small>B</small></div>
+  </div>
+</div>
+
+<canvas id="game" width="800" height="600"></canvas>
+
+<div id="chatMessages"></div>
+
+<div id="chatInput" class="hidden">
+  <input type="text" id="chatInputField" placeholder="Escribe un mensaje..." maxlength="100">
+  <button id="chatSendBtn">Enviar</button>
+</div>
+
+<script type="module">
+import { 
+    initializeApp 
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+
+import { 
+    getDatabase, ref, set, onValue, remove, get 
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+// =====================================================
+// CONFIG FIREBASE
+// =====================================================
+const app = initializeApp({
+  apiKey: "AIzaSyClTAw_XLfH3UcCKTisTREZchz41tTxL7g",
+  authDomain: "projectmap-382dd.firebaseapp.com",
+  databaseURL: "https://projectmap-382dd-default-rtdb.firebaseio.com",
+  projectId: "projectmap-382dd",
+  storageBucket: "projectmap-382dd.firebasestorage.app",
+  messagingSenderId: "1016267509437",
+  appId: "1:1016267509437:web:fa243dd82b151383ccb1d4",
+  measurementId: "G-4ECYZ37F17"
+});
+
+const db = getDatabase(app);
+
+// =====================================================
+// VARIABLES DEL JUEGO
+// =====================================================
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let myId = null;
+let myUsername = null;
+let myColor = `hsl(${Math.random()*360}, 70%, 60%)`;
+
+let players = {};
+let smoothPlayers = {};
+
+let pos = { x: 400, y: 300 };
+let keys = {};
+let speed = 2.2;
+let playerHealth = 500; // Vida del jugador
+
+let gameStarted = false;
+
+// Variables de ataque
+let isAttacking = false;
+let attackCooldown = 0;
+let targetEnemy = null;
+
+// Variables de arco y bola de fuego
+let isAiming = false;
+let isManualAiming = false;
+let aimAngle = 0;
+let arrows = [];
+let fireballs = [];
+let syncedArrows = [];
+let syncedFireballs = [];
+let xPressTime = 0;
+
+// Sistema de armas
+let currentWeapon = "fist"; // "fist", "sword", "bow" o "fireball"
+let weapons = {
+    fist: {
+        name: "Puño",
+        range: 150,
+        speed: 8,
+        cooldown: 30,
+        damage: 25,
+        color: "rgba(255, 100, 100, 0.8)"
+    },
+    sword: {
+        name: "Espada",
+        range: 200,
+        speed: 10,
+        cooldown: 15,
+        damage: 50,
+        color: "rgba(100, 200, 255, 0.8)"
+    },
+    bow: {
+        name: "Arco",
+        range: 400,
+        speed: 12,
+        cooldown: 20,
+        damage: 35,
+        color: "rgba(200, 150, 100, 0.8)"
+    },
+    fireball: {
+        name: "🔥 Bola de Fuego",
+        range: 300,
+        speed: 6,
+        cooldown: 25,
+        damage: 60,
+        color: "rgba(255, 100, 0, 0.9)"
+    }
+};
+
+// Efectos de impacto
+let impacts = [];
+
+// Efectos de fuego
+let fireEffects = [];
+
+// Efectos de impacto sincronizados
+let syncedImpacts = [];
+
+// Estado del chat
+let chatOpen = false;
+// SISTEMA DE LOGIN
+// =====================================================
+const loginScreen = document.getElementById("loginScreen");
+const loginBox = document.getElementById("loginBox");
+const usernameInput = document.getElementById("usernameInput");
+const loginBtn = document.getElementById("loginBtn");
+const userInfo = document.getElementById("userInfo");
+const currentUserSpan = document.getElementById("currentUser");
+const chatMessagesDiv = document.getElementById("chatMessages");
+const chatInput = document.getElementById("chatInput");
+const chatInputField = document.getElementById("chatInputField");
+const chatSendBtn = document.getElementById("chatSendBtn");
+
+// Verificar si hay usuario guardado
+const savedUsername = localStorage.getItem("amongUsUsername");
+if (savedUsername) {
+    usernameInput.value = savedUsername;
+}
+
+loginBtn.addEventListener("click", startGame);
+usernameInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") startGame();
+});
+
+// Auto-iniciar sesión si hay usuario guardado
+window.addEventListener("load", () => {
+    const savedUsername = localStorage.getItem("amongUsUsername");
+    if (savedUsername) {
+        startGame();
+    }
+});
+
+async function startGame() {
+    const username = usernameInput.value.trim();
+    
+    if (username.length < 3) {
+        alert("El nombre debe tener al menos 3 caracteres");
+        return;
+    }
+
+    myUsername = username;
+    myId = "player_" + username.toLowerCase().replace(/\s+/g, "_");
+
+    // Guardar usuario en localStorage
+    localStorage.setItem("amongUsUsername", myUsername);
+
+    // Limpiar cualquier instancia anterior del mismo usuario
+    await remove(ref(db, "players/" + myId));
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Registrar cuenta en Firebase
+    await set(ref(db, "cuentas/" + myId), {
+        username: myUsername,
+        createdAt: Date.now()
+    });
+
+    // Ocultar login y mostrar juego
+    loginScreen.classList.add("hidden");
+    userInfo.classList.remove("hidden");
+    document.getElementById("inventoryBar").classList.remove("hidden");
+    document.getElementById("healthBar").classList.remove("hidden");
+    currentUserSpan.textContent = myUsername;
+
+    gameStarted = true;
+    startGameLoop();
+    
+    // Agregar listeners al inventario
+    setupInventoryListeners();
+    
+    // Iniciar escucha del chat
+    listenToChat();
+}
+
+// =====================================================
+// CONTROLES (WASD + FLECHAS + X PARA ATACAR + Z/C/V PARA CAMBIAR ARMA)
+// =====================================================
+document.addEventListener("keydown", e => {
+    // Abrir/cerrar chat con Enter
+    if (e.key === "Enter" && gameStarted) {
+        if (!chatOpen) {
+            chatOpen = true;
+            chatInput.classList.remove("hidden");
+            chatInputField.focus();
+        }
+        return; // No procesar otros controles
+    }
+    
+    // Si el chat está abierto, no procesar controles del juego
+    if (chatOpen) return;
+    
+    keys[e.key] = true;
+    keys[e.key.toLowerCase()] = true;
+    
+    // Ataque con X
+    if ((e.key === "x" || e.key === "X")) {
+        if (currentWeapon === "bow" && !isAiming) {
+            xPressTime = Date.now();
+            isManualAiming = true;
+            isAiming = true;
+        } else if (!isAttacking && attackCooldown <= 0 && currentWeapon !== "bow" && currentWeapon !== "fireball") {
+            performAttack();
+        }
+    }
+    
+    // Cambiar a puño con Z
+    if ((e.key === "z" || e.key === "Z")) {
+        currentWeapon = "fist";
+        isAiming = false;
+        isManualAiming = false;
+        updateInventoryUI();
+    }
+    
+    // Cambiar a espada con C
+    if ((e.key === "c" || e.key === "C")) {
+        currentWeapon = "sword";
+        isAiming = false;
+        isManualAiming = false;
+        updateInventoryUI();
+    }
+    
+    // Cambiar a arco con V
+    if ((e.key === "v" || e.key === "V")) {
+        currentWeapon = "bow";
+        updateInventoryUI();
+    }
+    
+    // Cambiar a bola de fuego con B
+    if ((e.key === "b" || e.key === "B")) {
+        currentWeapon = "fireball";
+        isAiming = false;
+        isManualAiming = false;
+        updateInventoryUI();
+    }
+});
+
+document.addEventListener("keyup", e => {
+    keys[e.key] = false;
+    keys[e.key.toLowerCase()] = false;
+    
+    // Soltar X dispara la flecha
+    if ((e.key === "x" || e.key === "X") && isAiming && currentWeapon === "bow") {
+        let pressDuration = Date.now() - xPressTime;
+        
+        // Si se presionó menos de 300ms, es un click rápido (auto-apuntar)
+        if (pressDuration < 300) {
+            autoAimToClosestEnemy();
+        }
+        fireArrow();
+        attackCooldown = weapons["bow"].cooldown;
+        isAiming = false;
+        isManualAiming = false;
+    }
+});
+
+// Mouse move para apuntar con el arco (solo si se mantiene presionado)
+document.addEventListener("mousemove", (e) => {
+    if (isManualAiming && currentWeapon === "bow") {
+        let rect = canvas.getBoundingClientRect();
+        let mouseX = e.clientX - rect.left;
+        let mouseY = e.clientY - rect.top;
+        aimAngle = Math.atan2(mouseY - pos.y, mouseX - pos.x);
+    }
+});
+
+// Click del mouse para lanzar bola de fuego
+canvas.addEventListener("click", (e) => {
+    if (gameStarted && !chatOpen && currentWeapon === "fireball" && attackCooldown <= 0) {
+        let rect = canvas.getBoundingClientRect();
+        let clickX = e.clientX - rect.left;
+        let clickY = e.clientY - rect.top;
+        
+        // Crear efecto de fuego instantáneamente donde se hizo click
+        fireEffects.push({
+            x: clickX,
+            y: clickY,
+            life: 300,
+            maxLife: 300,
+            radius: 50
+        });
+        
+        // Enviar efecto de fuego a Firebase
+        const fireballId = "fireball_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+        set(ref(db, "fireballs/" + fireballId), {
+            x: clickX,
+            y: clickY,
+            angle: 0,
+            speed: 0,
+            playerId: myId,
+            damage: weapons["fireball"].damage,
+            timestamp: Date.now()
+        }).catch(err => console.error("Error al enviar bola de fuego:", err));
+        
+        attackCooldown = weapons["fireball"].cooldown;
+    }
+});
+
+function autoAimToClosestEnemy() {
+    let weapon = weapons["bow"];
+    let closestEnemy = null;
+    let closestDistance = weapon.range;
+    
+    for (let id in smoothPlayers) {
+        if (id === myId) continue;
+        
+        let enemy = smoothPlayers[id];
+        let dx = enemy.x - pos.x;
+        let dy = enemy.y - pos.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < closestDistance) {
+            closestDistance = distance;
+            closestEnemy = { x: enemy.x, y: enemy.y };
+        }
+    }
+    
+    if (closestEnemy) {
+        let dx = closestEnemy.x - pos.x;
+        let dy = closestEnemy.y - pos.y;
+        aimAngle = Math.atan2(dy, dx);
+    }
+}
+
+// =====================================================
+// SISTEMA DE ATAQUE
+// =====================================================
+function performAttack() {
+    let weapon = weapons[currentWeapon];
+    
+    // Encontrar enemigo más cercano
+    let closestEnemy = null;
+    let closestDistance = weapon.range;
+    
+    for (let id in smoothPlayers) {
+        if (id === myId) continue;
+        
+        let enemy = smoothPlayers[id];
+        let dx = enemy.x - pos.x;
+        let dy = enemy.y - pos.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < closestDistance) {
+            closestDistance = distance;
+            closestEnemy = { id, enemy, dx, dy, distance };
+        }
+    }
+    
+    if (closestEnemy) {
+        isAttacking = true;
+        targetEnemy = closestEnemy;
+        attackCooldown = weapon.cooldown;
+    }
+}
+
+function updateAttack() {
+    if (isAttacking && targetEnemy) {
+        let weapon = weapons[currentWeapon];
+        let dx = targetEnemy.enemy.x - pos.x;
+        let dy = targetEnemy.enemy.y - pos.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Moverse hacia el enemigo
+        if (distance > 20) {
+            let angle = Math.atan2(dy, dx);
+            pos.x += Math.cos(angle) * weapon.speed;
+            pos.y += Math.sin(angle) * weapon.speed;
+        } else {
+            // Llegó al enemigo, crear impacto
+            if (currentWeapon === "fireball") {
+                // Crear efecto de fuego
+                fireEffects.push({
+                    x: targetEnemy.enemy.x,
+                    y: targetEnemy.enemy.y,
+                    life: 300,
+                    maxLife: 300,
+                    radius: 50
+                });
+            } else {
+                // Enviar impacto a Firebase para puño y espada
+                const impactId = "impact_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+                const damage = weapons[currentWeapon].damage;
+                set(ref(db, "impacts/" + impactId), {
+                    x: targetEnemy.enemy.x,
+                    y: targetEnemy.enemy.y,
+                    life: 20,
+                    maxLife: 20,
+                    damage: damage,
+                    targetId: targetEnemy.id,
+                    timestamp: Date.now()
+                }).catch(err => console.error("Error al enviar impacto:", err));
+                
+                impacts.push({
+                    x: targetEnemy.enemy.x,
+                    y: targetEnemy.enemy.y,
+                    life: 20,
+                    maxLife: 20
+                });
+            }
+            isAttacking = false;
+            targetEnemy = null;
+        }
+    }
+    
+    // Actualizar flechas
+    for (let i = arrows.length - 1; i >= 0; i--) {
+        let arrow = arrows[i];
+        arrow.x += Math.cos(arrow.angle) * arrow.speed;
+        arrow.y += Math.sin(arrow.angle) * arrow.speed;
+        
+        // Eliminar si sale del mapa
+        if (arrow.x < 0 || arrow.x > canvas.width || arrow.y < 0 || arrow.y > canvas.height) {
+            arrows.splice(i, 1);
+            continue;
+        }
+        
+        // Detectar colisión con enemigos
+        for (let id in smoothPlayers) {
+            if (id === myId) continue;
+            
+            let enemy = smoothPlayers[id];
+            let dx = enemy.x - arrow.x;
+            let dy = enemy.y - arrow.y;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < 20) {
+                // Enviar impacto a Firebase
+                const impactId = "impact_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+                const damage = weapons["bow"].damage;
+                set(ref(db, "impacts/" + impactId), {
+                    x: arrow.x,
+                    y: arrow.y,
+                    life: 20,
+                    maxLife: 20,
+                    damage: damage,
+                    targetId: id,
+                    timestamp: Date.now()
+                }).catch(err => console.error("Error al enviar impacto:", err));
+                
+                impacts.push({
+                    x: arrow.x,
+                    y: arrow.y,
+                    life: 20,
+                    maxLife: 20
+                });
+                arrows.splice(i, 1);
+                attackCooldown = weapons["bow"].cooldown;
+                break;
+            }
+        }
+    }
+    
+    // Actualizar bolas de fuego
+    for (let i = fireballs.length - 1; i >= 0; i--) {
+        let fireball = fireballs[i];
+        fireball.x += Math.cos(fireball.angle) * fireball.speed;
+        fireball.y += Math.sin(fireball.angle) * fireball.speed;
+        
+        // Eliminar si sale del mapa
+        if (fireball.x < 0 || fireball.x > canvas.width || fireball.y < 0 || fireball.y > canvas.height) {
+            fireballs.splice(i, 1);
+            continue;
+        }
+        
+        // Detectar colisión con enemigos
+        for (let id in smoothPlayers) {
+            if (id === myId) continue;
+            let enemy = smoothPlayers[id];
+            let dx = enemy.x - fireball.x;
+            let dy = enemy.y - fireball.y;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < 20) {
+                // Crear efecto de fuego localmente (solo para quien lanzó)
+                fireEffects.push({
+                    x: fireball.x,
+                    y: fireball.y,
+                    life: 300,
+                    maxLife: 300,
+                    radius: 50
+                });
+                
+                fireballs.splice(i, 1);
+                attackCooldown = weapons["fireball"].cooldown;
+                break;
+            }
+        }
+        
+        fireball.life--;
+        if (fireball.life <= 0) {
+            fireballs.splice(i, 1);
+        }
+    }
+    
+    // Actualizar impactos
+    for (let i = impacts.length - 1; i >= 0; i--) {
+        impacts[i].life--;
+        if (impacts[i].life <= 0) {
+            impacts.splice(i, 1);
+        }
+    }
+    
+    // Actualizar flechas sincronizadas (de otros jugadores)
+    for (let i = syncedArrows.length - 1; i >= 0; i--) {
+        let arrow = syncedArrows[i];
+        arrow.x += Math.cos(arrow.angle) * arrow.speed;
+        arrow.y += Math.sin(arrow.angle) * arrow.speed;
+        
+        // Eliminar si sale del mapa
+        if (arrow.x < 0 || arrow.x > canvas.width || arrow.y < 0 || arrow.y > canvas.height) {
+            syncedArrows.splice(i, 1);
+        }
+    }
+    
+    // Actualizar bolas de fuego sincronizadas (de otros jugadores)
+    for (let i = syncedFireballs.length - 1; i >= 0; i--) {
+        let fireball = syncedFireballs[i];
+        // Decrementar vida
+        if (!fireball.life) {
+            fireball.life = 300; // Inicializar vida si no existe
+        }
+        fireball.life--;
+        
+        // Eliminar si sale del mapa o se acaba la vida
+        if (fireball.x < 0 || fireball.x > canvas.width || fireball.y < 0 || fireball.y > canvas.height || fireball.life <= 0) {
+            syncedFireballs.splice(i, 1);
+        }
+    }
+    
+    // Reducir cooldown
+    if (attackCooldown > 0) {
+        attackCooldown--;
+    }
+}
+
+function fireArrow() {
+    const arrowData = {
+        x: pos.x,
+        y: pos.y,
+        angle: aimAngle,
+        speed: 7
+    };
+    arrows.push(arrowData);
+    
+    // Enviar flecha a Firebase
+    const arrowId = "arrow_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+    set(ref(db, "arrows/" + arrowId), {
+        x: arrowData.x,
+        y: arrowData.y,
+        angle: arrowData.angle,
+        speed: arrowData.speed,
+        playerId: myId,
+        timestamp: Date.now()
+    }).catch(err => console.error("Error al enviar flecha:", err));
+}
+
+function fireFireball() {
+    const fireballData = {
+        x: pos.x,
+        y: pos.y,
+        angle: aimAngle,
+        speed: 5,
+        life: 300, // 5 segundos
+        maxLife: 300,
+        radius: 50
+    };
+    fireballs.push(fireballData);
+    
+    // Enviar bola de fuego a Firebase
+    const fireballId = "fireball_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+    set(ref(db, "fireballs/" + fireballId), {
+        x: fireballData.x,
+        y: fireballData.y,
+        angle: fireballData.angle,
+        speed: fireballData.speed,
+        playerId: myId,
+        timestamp: Date.now()
+    }).catch(err => console.error("Error al enviar bola de fuego:", err));
+}
+
+// =====================================================
+// MOVIMIENTO LOCAL
+// =====================================================
+function updateMovement() {
+    // WASD
+    if (keys["w"] || keys["W"] || keys["ArrowUp"]) pos.y -= speed;
+    if (keys["s"] || keys["S"] || keys["ArrowDown"]) pos.y += speed;
+    if (keys["a"] || keys["A"] || keys["ArrowLeft"]) pos.x -= speed;
+    if (keys["d"] || keys["D"] || keys["ArrowRight"]) pos.x += speed;
+
+    pos.x = Math.max(15, Math.min(canvas.width - 15, pos.x));
+    pos.y = Math.max(15, Math.min(canvas.height - 15, pos.y));
+}
+
+// =====================================================
+// ENVIAR POSICIÓN A FIREBASE
+// =====================================================
+function startGameLoop() {
+    setInterval(() => {
+        if (gameStarted) {
+            set(ref(db, "players/" + myId), {
+                x: pos.x,
+                y: pos.y,
+                color: myColor,
+                username: myUsername,
+                health: playerHealth
+            });
+        }
+    }, 150);
+
+    // =====================================================
+    // ESCUCHAR PLAYERS
+    // =====================================================
+    onValue(ref(db, "players"), snapshot => {
+        players = snapshot.val() || {};
+
+        for (let id in players) {
+            if (!smoothPlayers[id]) {
+                smoothPlayers[id] = { 
+                    x: players[id].x,
+                    y: players[id].y,
+                    color: players[id].color,
+                    username: players[id].username,
+                    health: players[id].health
+                };
+            }
+        }
+
+        // Limpiar jugadores que ya no existen
+        for (let id in smoothPlayers) {
+            if (!players[id]) {
+                delete smoothPlayers[id];
+            }
+        }
+    });
+
+    // =====================================================
+    // ESCUCHAR EFECTOS DE FUEGO
+    // =====================================================
+    onValue(ref(db, "fireEffects"), snapshot => {
+        const effects = snapshot.val() || {};
+        fireEffects = [];
+        
+        for (let id in effects) {
+            let effect = effects[id];
+            fireEffects.push({
+                x: effect.x,
+                y: effect.y,
+                life: effect.life,
+                maxLife: effect.maxLife,
+                radius: effect.radius
+            });
+        }
+        
+        // Limpiar efectos antiguos (mantener solo los últimos 20)
+        if (Object.keys(effects).length > 20) {
+            const effectIds = Object.keys(effects);
+            const toDelete = effectIds.slice(0, effectIds.length - 20);
+            toDelete.forEach(id => {
+                remove(ref(db, "fireEffects/" + id)).catch(err => console.error("Error al eliminar efecto:", err));
+            });
+        }
+    });
+
+    // =====================================================
+    // ESCUCHAR IMPACTOS
+    // =====================================================
+    onValue(ref(db, "impacts"), snapshot => {
+        const impactsData = snapshot.val() || {};
+        syncedImpacts = [];
+        
+        for (let id in impactsData) {
+            let impact = impactsData[id];
+            
+            // Aplicar daño si el impacto es dirigido a nosotros
+            if (impact.targetId === myId && impact.damage && !impact.processed) {
+                playerHealth -= impact.damage;
+                if (playerHealth < 0) playerHealth = 0;
+                
+                // Marcar como procesado
+                set(ref(db, "impacts/" + id + "/processed"), true).catch(err => console.error("Error al marcar impacto:", err));
+            }
+            
+            // Decrementar vida del impacto
+            let newLife = impact.life - 1;
+            
+            if (newLife <= 0) {
+                // Eliminar impacto cuando su vida llega a 0
+                remove(ref(db, "impacts/" + id)).catch(err => console.error("Error al eliminar impacto:", err));
+            } else {
+                // Actualizar vida en Firebase
+                set(ref(db, "impacts/" + id + "/life"), newLife).catch(err => console.error("Error al actualizar vida:", err));
+                
+                syncedImpacts.push({
+                    x: impact.x,
+                    y: impact.y,
+                    life: newLife,
+                    maxLife: impact.maxLife
+                });
+            }
+        }
+    });
+
+    // =====================================================
+    // ESCUCHAR FLECHAS
+    // =====================================================
+    onValue(ref(db, "arrows"), snapshot => {
+        const arrowsData = snapshot.val() || {};
+        syncedArrows = [];
+        
+        for (let id in arrowsData) {
+            let arrow = arrowsData[id];
+            // Solo mostrar flechas de otros jugadores
+            if (arrow.playerId !== myId) {
+                syncedArrows.push({
+                    id: id,
+                    x: arrow.x,
+                    y: arrow.y,
+                    angle: arrow.angle,
+                    speed: arrow.speed,
+                    playerId: arrow.playerId,
+                    timestamp: arrow.timestamp
+                });
+            }
+        }
+        
+        // Limpiar flechas antiguas (más de 5 segundos)
+        const now = Date.now();
+        for (let id in arrowsData) {
+            if (now - arrowsData[id].timestamp > 5000) {
+                remove(ref(db, "arrows/" + id)).catch(err => console.error("Error al eliminar flecha:", err));
+            }
+        }
+    });
+
+    // =====================================================
+    // ESCUCHAR BOLAS DE FUEGO
+    // =====================================================
+    onValue(ref(db, "fireballs"), snapshot => {
+        const fireballsData = snapshot.val() || {};
+        syncedFireballs = [];
+        
+        for (let id in fireballsData) {
+            let fireball = fireballsData[id];
+            
+            // Aplicar daño si la bola de fuego nos golpea
+            if (fireball.damage && !fireball.processed) {
+                let dx = fireball.x - pos.x;
+                let dy = fireball.y - pos.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < 60) { // Radio de daño de la bola de fuego
+                    playerHealth -= fireball.damage;
+                    if (playerHealth < 0) playerHealth = 0;
+                    
+                    // Marcar como procesado
+                    set(ref(db, "fireballs/" + id + "/processed"), true).catch(err => console.error("Error al marcar fireball:", err));
+                }
+            }
+            
+            // Solo mostrar bolas de fuego de otros jugadores
+            if (fireball.playerId !== myId) {
+                syncedFireballs.push({
+                    id: id,
+                    x: fireball.x,
+                    y: fireball.y,
+                    angle: fireball.angle,
+                    speed: fireball.speed,
+                    playerId: fireball.playerId,
+                    timestamp: fireball.timestamp
+                });
+            }
+        }
+        
+        // Limpiar bolas de fuego antiguas (más de 5 segundos)
+        const now2 = Date.now();
+        for (let id in fireballsData) {
+            if (now2 - fireballsData[id].timestamp > 5000) {
+                remove(ref(db, "fireballs/" + id)).catch(err => console.error("Error al eliminar bola de fuego:", err));
+            }
+        }
+    });
+
+    loop();
+}
+
+// =====================================================
+// INTERPOLACIÓN
+// =====================================================
+function interpolate() {
+    for (let id in players) {
+        let target = players[id];
+        let sm = smoothPlayers[id];
+        if (!sm) continue;
+
+        sm.x += (target.x - sm.x) * 0.1;
+        sm.y += (target.y - sm.y) * 0.1;
+        sm.color = target.color;
+        sm.username = target.username;
+        sm.health = target.health;
+    }
+}
+
+// =====================================================
+// DIBUJAR
+// =====================================================
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let id in smoothPlayers) {
+        let p = smoothPlayers[id];
+
+        // Cuerpo del jugador
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 15, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Borde si es el jugador local
+        if (id === myId) {
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 17, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Efecto de ataque
+            if (isAttacking && targetEnemy) {
+                // Línea de ataque hacia el enemigo
+                ctx.strokeStyle = "rgba(255, 100, 100, 0.8)";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(targetEnemy.enemy.x, targetEnemy.enemy.y);
+                ctx.stroke();
+                
+                // Aura roja pulsante
+                let pulse = Math.sin(Date.now() / 100) * 5 + 25;
+                ctx.strokeStyle = "rgba(255, 50, 50, 0.6)";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, pulse, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Texto de ataque
+                ctx.fillStyle = "rgba(255, 100, 100, 1)";
+                ctx.font = "bold 16px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText("⚔ ATACANDO", p.x, p.y + 35);
+            }
+        }
+
+        // Nombre del jugador
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 12px Arial";
+        ctx.textAlign = "center";
+        const displayName = id === myId ? p.username + " (Tú)" : p.username;
+        ctx.fillText(displayName, p.x, p.y - 25);
+        
+        // Barra de vida
+        ctx.fillStyle = "rgba(255, 0, 0, 0.8)";
+        ctx.fillRect(p.x - 20, p.y - 40, 40, 5);
+        ctx.fillStyle = "rgba(0, 255, 0, 0.8)";
+        ctx.fillRect(p.x - 20, p.y - 40, (p.health / 500) * 40, 5);
+    }
+    
+    // Dibujar impactos locales
+    for (let impact of impacts) {
+        let progress = 1 - (impact.life / impact.maxLife);
+        let radius = 10 + progress * 40;
+        let opacity = 1 - progress;
+        
+        // Círculo de impacto expandiéndose
+        ctx.strokeStyle = `rgba(255, 200, 0, ${opacity * 0.8})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(impact.x, impact.y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Círculo interior más pequeño
+        ctx.strokeStyle = `rgba(255, 100, 0, ${opacity})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(impact.x, impact.y, radius * 0.6, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Rayos de impacto
+        ctx.strokeStyle = `rgba(255, 150, 0, ${opacity * 0.6})`;
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 8; i++) {
+            let angle = (Math.PI * 2 / 8) * i;
+            let x1 = impact.x + Math.cos(angle) * radius * 0.5;
+            let y1 = impact.y + Math.sin(angle) * radius * 0.5;
+            let x2 = impact.x + Math.cos(angle) * radius * 1.2;
+            let y2 = impact.y + Math.sin(angle) * radius * 1.2;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+    }
+    
+    // Dibujar impactos sincronizados desde Firebase
+    for (let impact of syncedImpacts) {
+        let progress = 1 - (impact.life / impact.maxLife);
+        let radius = 10 + progress * 40;
+        let opacity = 1 - progress;
+        
+        // Círculo de impacto expandiéndose
+        ctx.strokeStyle = `rgba(255, 200, 0, ${opacity * 0.8})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(impact.x, impact.y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Círculo interior más pequeño
+        ctx.strokeStyle = `rgba(255, 100, 0, ${opacity})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(impact.x, impact.y, radius * 0.6, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Rayos de impacto
+        ctx.strokeStyle = `rgba(255, 150, 0, ${opacity * 0.6})`;
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 8; i++) {
+            let angle = (Math.PI * 2 / 8) * i;
+            let x1 = impact.x + Math.cos(angle) * radius * 0.5;
+            let y1 = impact.y + Math.sin(angle) * radius * 0.5;
+            let x2 = impact.x + Math.cos(angle) * radius * 1.2;
+            let y2 = impact.y + Math.sin(angle) * radius * 1.2;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+    }
+    
+    // Dibujar efectos de fuego
+    for (let i = fireEffects.length - 1; i >= 0; i--) {
+        let fire = fireEffects[i];
+        let progress = 1 - (fire.life / fire.maxLife);
+        let opacity = Math.cos(progress * Math.PI) * 0.8; // Efecto pulsante
+        
+        // Círculo principal de fuego
+        ctx.fillStyle = `rgba(255, 100, 0, ${opacity * 0.6})`;
+        ctx.beginPath();
+        ctx.arc(fire.x, fire.y, fire.radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Borde del fuego
+        ctx.strokeStyle = `rgba(255, 150, 0, ${opacity})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(fire.x, fire.y, fire.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Partículas de fuego
+        for (let p = 0; p < 8; p++) {
+            let angle = (Math.PI * 2 / 8) * p + progress * Math.PI;
+            let distance = fire.radius * (0.7 + Math.sin(progress * Math.PI * 2) * 0.3);
+            let px = fire.x + Math.cos(angle) * distance;
+            let py = fire.y + Math.sin(angle) * distance;
+            
+            // Partícula pequeña
+            ctx.fillStyle = `rgba(255, ${200 - progress * 100}, 0, ${opacity * 0.8})`;
+            ctx.beginPath();
+            ctx.arc(px, py, 5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        fire.life--;
+        if (fire.life <= 0) {
+            fireEffects.splice(i, 1);
+        }
+    }
+    
+    // Dibujar flechas
+    for (let arrow of arrows) {
+        ctx.save();
+        ctx.translate(arrow.x, arrow.y);
+        ctx.rotate(arrow.angle);
+        
+        // Punta de la flecha
+        ctx.fillStyle = "rgba(200, 150, 100, 0.9)";
+        ctx.beginPath();
+        ctx.moveTo(8, 0);
+        ctx.lineTo(-8, -4);
+        ctx.lineTo(-8, 4);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Tallo de la flecha
+        ctx.strokeStyle = "rgba(180, 120, 80, 0.9)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(8, 0);
+        ctx.lineTo(-12, 0);
+        ctx.stroke();
+        
+        ctx.restore();
+    }
+    
+    // Dibujar flechas sincronizadas desde otros jugadores
+    for (let arrow of syncedArrows) {
+        ctx.save();
+        ctx.translate(arrow.x, arrow.y);
+        ctx.rotate(arrow.angle);
+        
+        // Punta de la flecha
+        ctx.fillStyle = "rgba(200, 150, 100, 0.7)";
+        ctx.beginPath();
+        ctx.moveTo(8, 0);
+        ctx.lineTo(-8, -4);
+        ctx.lineTo(-8, 4);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Tallo de la flecha
+        ctx.strokeStyle = "rgba(180, 120, 80, 0.7)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(8, 0);
+        ctx.lineTo(-12, 0);
+        ctx.stroke();
+        
+        ctx.restore();
+    }
+    
+    // Dibujar bolas de fuego sincronizadas desde otros jugadores (efecto de fuego completo)
+    for (let fireball of syncedFireballs) {
+        let progress = 0.5; // Efecto constante para bolas de fuego sincronizadas
+        let opacity = 0.8;
+        
+        // Círculo principal de fuego
+        ctx.fillStyle = `rgba(255, 100, 0, ${opacity * 0.6})`;
+        ctx.beginPath();
+        ctx.arc(fireball.x, fireball.y, 50, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Borde del fuego
+        ctx.strokeStyle = `rgba(255, 150, 0, ${opacity})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(fireball.x, fireball.y, 50, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Partículas de fuego animadas
+        for (let p = 0; p < 8; p++) {
+            let angle = (Math.PI * 2 / 8) * p + progress * Math.PI;
+            let distance = 50 * (0.7 + Math.sin(progress * Math.PI * 2) * 0.3);
+            let px = fireball.x + Math.cos(angle) * distance;
+            let py = fireball.y + Math.sin(angle) * distance;
+            
+            // Partícula pequeña
+            ctx.fillStyle = `rgba(255, ${200 - progress * 100}, 0, ${opacity * 0.8})`;
+            ctx.beginPath();
+            ctx.arc(px, py, 5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    
+    // Indicador de apuntería solo si se mantiene presionado (apuntería manual)
+    if (isManualAiming && (currentWeapon === "bow" || currentWeapon === "fireball")) {
+        // Línea de apuntería
+        let aimDistance = 150;
+        let aimEndX = pos.x + Math.cos(aimAngle) * aimDistance;
+        let aimEndY = pos.y + Math.sin(aimAngle) * aimDistance;
+        
+        ctx.strokeStyle = "rgba(255, 200, 0, 0.6)";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+        ctx.lineTo(aimEndX, aimEndY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Círculo de apuntería
+        ctx.strokeStyle = "rgba(255, 200, 0, 0.8)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(aimEndX, aimEndY, 15, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Punto central
+        ctx.fillStyle = "rgba(255, 200, 0, 1)";
+        ctx.beginPath();
+        ctx.arc(aimEndX, aimEndY, 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    
+    // Dibujar bolas de fuego en vuelo (solo visible para quien las lanza)
+    for (let fireball of fireballs) {
+        // Círculo de fuego
+        ctx.fillStyle = "rgba(255, 100, 0, 0.8)";
+        ctx.beginPath();
+        ctx.arc(fireball.x, fireball.y, 12, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Borde brillante
+        ctx.strokeStyle = "rgba(255, 200, 0, 1)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(fireball.x, fireball.y, 12, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Partículas pequeñas alrededor
+        for (let p = 0; p < 4; p++) {
+            let angle = (Math.PI * 2 / 4) * p;
+            let px = fireball.x + Math.cos(angle) * 18;
+            let py = fireball.y + Math.sin(angle) * 18;
+            ctx.fillStyle = "rgba(255, 150, 0, 0.6)";
+            ctx.beginPath();
+            ctx.arc(px, py, 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    
+    // Mostrar arma actual
+    let weapon = weapons[currentWeapon];
+    ctx.fillStyle = weapon.color;
+    ctx.font = "bold 14px Arial";
+    ctx.textAlign = "left";
+    ctx.fillText(`Arma: ${weapon.name}`, 10, canvas.height - 10);
+    
+    // Actualizar barra de vida en el DOM
+    updateHealthBar();
+}
+
+// =====================================================
+// SISTEMA DE VIDA
+// =====================================================
+function updateHealthBar() {
+    const healthPercent = (playerHealth / 500) * 100;
+    const healthBarFill = document.getElementById("healthBarFill");
+    const healthText = document.getElementById("healthText");
+    
+    healthBarFill.style.width = healthPercent + "%";
+    healthText.textContent = Math.max(0, playerHealth) + "/500";
+    
+    // Cambiar color según la vida
+    if (healthPercent > 50) {
+        healthBarFill.style.background = "linear-gradient(90deg, #00ff00, #00cc00)";
+    } else if (healthPercent > 25) {
+        healthBarFill.style.background = "linear-gradient(90deg, #ffff00, #ffcc00)";
+    } else {
+        healthBarFill.style.background = "linear-gradient(90deg, #ff0000, #cc0000)";
+    }
+}
+
+// =====================================================
+// LOOP
+// =====================================================
+function loop() {
+    if (gameStarted) {
+        updateMovement();
+        updateAttack();
+        interpolate();
+        draw();
+    }
+    requestAnimationFrame(loop);
+}
+
+// =====================================================
+// SISTEMA DE INVENTARIO
+// =====================================================
+function setupInventoryListeners() {
+    const slots = document.querySelectorAll(".inventory-slot");
+    slots.forEach(slot => {
+        slot.addEventListener("click", () => {
+            const weapon = slot.getAttribute("data-weapon");
+            currentWeapon = weapon;
+            updateInventoryUI();
+        });
+    });
+}
+
+function updateInventoryUI() {
+    const slots = document.querySelectorAll(".inventory-slot");
+    slots.forEach(slot => {
+        const weapon = slot.getAttribute("data-weapon");
+        if (weapon === currentWeapon) {
+            slot.classList.add("active");
+        } else {
+            slot.classList.remove("active");
+        }
+    });
+}
+
+// =====================================================
+// SISTEMA DE CHAT
+// =====================================================
+function sendChatMessage() {
+    if (chatInputField.value.trim() && gameStarted) {
+        const msg = chatInputField.value.trim();
+        
+        // Enviar mensaje a Firebase en la ruta /messages
+        const msgId = "msg_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+        set(ref(db, "messages/" + msgId), {
+            username: myUsername,
+            message: msg,
+            color: myColor,
+            timestamp: Date.now()
+        }).catch(err => console.error("Error al enviar mensaje:", err));
+        
+        chatInputField.value = "";
+        
+        // Cerrar chat
+        chatOpen = false;
+        chatInput.classList.add("hidden");
+    }
+}
+
+chatInputField.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        sendChatMessage();
+    }
+});
+
+chatSendBtn.addEventListener("click", sendChatMessage);
+
+function listenToChat() {
+    onValue(ref(db, "messages"), snapshot => {
+        const messages = snapshot.val() || {};
+        const msgArray = Object.entries(messages).map(([key, val]) => ({key, ...val}))
+            .sort((a, b) => a.timestamp - b.timestamp);
+        
+        // Limpiar mensajes antiguos (mantener solo los últimos 50)
+        if (msgArray.length > 50) {
+            const toDelete = msgArray.slice(0, msgArray.length - 50);
+            toDelete.forEach(msg => {
+                remove(ref(db, "messages/" + msg.key)).catch(err => console.error("Error al eliminar mensaje:", err));
+            });
+        }
+        
+        // Mostrar últimos 20 mensajes
+        chatMessagesDiv.innerHTML = msgArray.slice(-20).map(m => 
+            `<div class="chatMsg"><span class="username" style="color:${m.color}">${m.username}:</span> ${m.message}</div>`
+        ).join("");
+        
+        chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+    });
+}
+
+// =====================================================
+// BORRAR PLAYER AL SALIR
+// =====================================================
+window.addEventListener("beforeunload", () => {
+    if (myId) {
+        remove(ref(db, "players/" + myId));
+    }
+});
+
+</script>
+
+</body>
+</html>
