@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -87,6 +86,19 @@
     border-radius: 8px;
     z-index: 100;
   }
+  #playerCount {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    color: #00ff00;
+    font-size: 14px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px 15px;
+    border-radius: 8px;
+    z-index: 100;
+    border: 2px solid #00ff00;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+  }
   #inventoryBar {
     position: fixed;
     bottom: 20px;
@@ -117,6 +129,8 @@
     text-align: center;
     padding: 5px;
     box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
   }
   .inventory-slot:hover {
     border-color: #00ffff;
@@ -129,20 +143,44 @@
     box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
     transform: scale(1.1);
   }
+  .cooldown-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    height: 0%;
+    transition: height 0.05s linear;
+    pointer-events: none;
+  }
+  .cooldown-text {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-size: 10px;
+    color: #fff;
+    font-weight: bold;
+    text-shadow: 0 0 2px #000;
+    pointer-events: none;
+  }
   #chatMessages {
     position: fixed;
     bottom: 100px;
     left: 10px;
     width: 250px;
     max-height: 200px;
-    overflow-y: auto;
-    background: rgba(0, 0, 0, 0.7);
-    border: 2px solid #00ffff;
+    overflow: hidden;
+    background: transparent;
+    border: none;
     border-radius: 8px;
     padding: 10px;
     z-index: 100;
     color: #fff;
     font-size: 12px;
+  }
+  #chatMessages.chatOpen {
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #00ffff;
   }
   #chatInput {
     position: fixed;
@@ -231,7 +269,7 @@
 </head>
 <body>
 
-<div id="loginScreen">
+<div id="loginScreen" class="hidden">
   <div id="loginBox">
     <h1>🚀 AMONG US</h1>
     <input type="text" id="usernameInput" placeholder="Ingresa tu nombre de usuario" maxlength="15">
@@ -240,33 +278,45 @@
   </div>
 </div>
 
-<div id="userInfo" class="hidden">
-  Usuario: <span id="currentUser"></span>
+<div id="userInfo" class="">
+  Usuario: <span id="currentUser">user</span>
 </div>
 
-<div id="healthBar" class="hidden">
-  <div id="healthBarFill" style="width: 100%;"></div>
-  <div id="healthText">500/500</div>
+<div id="playerCount">
+  👥 Jugadores Online: <span id="onlineCount">0</span>
 </div>
 
-<div id="inventoryBar" class="hidden">
+<div id="healthBar" class="">
+  <div id="healthBarFill" style="width: 30%; background: linear-gradient(90deg, rgb(255, 255, 0), rgb(255, 204, 0));"></div>
+  <div id="healthText">150/500</div>
+</div>
+
+<div id="inventoryBar" class="">
   <div class="inventory-slot active" data-weapon="fist">
     <div>👊<br>Puño<br><small>Z</small></div>
+    <div class="cooldown-overlay" style="height: 0%;"></div>
+    <div class="cooldown-text"></div>
   </div>
   <div class="inventory-slot" data-weapon="sword">
     <div>⚔️<br>Espada<br><small>C</small></div>
+    <div class="cooldown-overlay" style="height: 0%;"></div>
+    <div class="cooldown-text"></div>
   </div>
   <div class="inventory-slot" data-weapon="bow">
     <div>🏹<br>Arco<br><small>V</small></div>
+    <div class="cooldown-overlay" style="height: 0%;"></div>
+    <div class="cooldown-text"></div>
   </div>
   <div class="inventory-slot" data-weapon="fireball">
     <div>🔥<br>Fuego<br><small>B</small></div>
+    <div class="cooldown-overlay" style="height: 0%;"></div>
+    <div class="cooldown-text"></div>
   </div>
 </div>
 
-<canvas id="game" width="800" height="600"></canvas>
+<canvas id="game" width="1200" height="800"></canvas>
 
-<div id="chatMessages"></div>
+<div id="chatMessages"><div class="chatMsg"><span class="username" style="color:hsl(335.10160560358645, 70%, 60%)">Ola783:</span> Aver matame</div><div class="chatMsg"><span class="username" style="color:hsl(103.08063270411074, 70%, 60%)">Paspias:</span> per</div><div class="chatMsg"><span class="username" style="color:hsl(103.08063270411074, 70%, 60%)">Paspias:</span> hola</div><div class="chatMsg"><span class="username" style="color:hsl(284.50946469035506, 70%, 60%)">Ola783:</span> Porque no puedo morir?</div><div class="chatMsg"><span class="username" style="color:hsl(103.08063270411074, 70%, 60%)">Paspias:</span> reinicia</div><div class="chatMsg"><span class="username" style="color:hsl(284.50946469035506, 70%, 60%)">Ola783:</span> voy</div><div class="chatMsg"><span class="username" style="color:hsl(103.08063270411074, 70%, 60%)">Paspias:</span> la pagina</div><div class="chatMsg"><span class="username" style="color:hsl(270.27399339043194, 70%, 60%)">Ola783:</span> Ya lo hice</div><div class="chatMsg"><span class="username" style="color:hsl(293.0859094721852, 70%, 60%)">Paspias:</span> ya si?</div><div class="chatMsg"><span class="username" style="color:hsl(293.0859094721852, 70%, 60%)">Paspias:</span> eliminame</div><div class="chatMsg"><span class="username" style="color:hsl(270.27399339043194, 70%, 60%)">Ola783:</span> volveme a matar, quiero mandarte algo</div><div class="chatMsg"><span class="username" style="color:hsl(143.8741763534864, 70%, 60%)">Ola783:</span> si?</div><div class="chatMsg"><span class="username" style="color:hsl(316.3253610300013, 70%, 60%)">Paspias:</span> dinero</div><div class="chatMsg"><span class="username" style="color:hsl(206.370661446054, 70%, 60%)">Paspias:</span> como se ve</div><div class="chatMsg"><span class="username" style="color:hsl(231.89982431897832, 70%, 60%)">Ola783:</span> ESTA RE ZARPADO</div><div class="chatMsg"><span class="username" style="color:hsl(206.370661446054, 70%, 60%)">Paspias:</span> oye</div><div class="chatMsg"><span class="username" style="color:hsl(231.89982431897832, 70%, 60%)">Ola783:</span> si?</div><div class="chatMsg"><span class="username" style="color:hsl(206.370661446054, 70%, 60%)">Paspias:</span> mandame foto de la pantalla de muerte</div><div class="chatMsg"><span class="username" style="color:hsl(206.370661446054, 70%, 60%)">Paspias:</span> gg</div><div class="chatMsg"><span class="username" style="color:hsl(140.0391965009375, 70%, 60%)">Paspias:</span> li</div></div>
 
 <div id="chatInput" class="hidden">
   <input type="text" id="chatInputField" placeholder="Escribe un mensaje..." maxlength="100">
@@ -315,6 +365,9 @@ let pos = { x: 400, y: 300 };
 let keys = {};
 let speed = 2.2;
 let playerHealth = 500; // Vida del jugador
+let killStreak = 0; // Contador de muertes consecutivas
+let lastKillTime = 0; // Timestamp del último asesinato
+const KILLSTREAK_TIMEOUT = 10000; // 10 segundos para mantener la racha activa
 
 let gameStarted = false;
 
@@ -322,6 +375,14 @@ let gameStarted = false;
 let isAttacking = false;
 let attackCooldown = 0;
 let targetEnemy = null;
+
+// Cooldowns por arma
+let weaponCooldowns = {
+    fist: 0,
+    sword: 0,
+    bow: 0,
+    fireball: 0
+};
 
 // Variables de arco y bola de fuego
 let isAiming = false;
@@ -364,7 +425,7 @@ let weapons = {
         name: "🔥 Bola de Fuego",
         range: 300,
         speed: 6,
-        cooldown: 25,
+        cooldown: 60,
         damage: 60,
         color: "rgba(255, 100, 0, 0.9)"
     }
@@ -388,6 +449,9 @@ let eliminationTime = 0;
 let eliminatedByName = "";
 let disintegrationEffects = [];
 
+// Variables para contador de jugadores
+let connectedPlayers = new Set();
+
 // SISTEMA DE LOGIN
 // =====================================================
 const loginScreen = document.getElementById("loginScreen");
@@ -400,6 +464,8 @@ const chatMessagesDiv = document.getElementById("chatMessages");
 const chatInput = document.getElementById("chatInput");
 const chatInputField = document.getElementById("chatInputField");
 const chatSendBtn = document.getElementById("chatSendBtn");
+const playerCountDiv = document.getElementById("playerCount");
+const onlineCountSpan = document.getElementById("onlineCount");
 
 // Verificar si hay usuario guardado
 const savedUsername = localStorage.getItem("amongUsUsername");
@@ -470,6 +536,8 @@ document.addEventListener("keydown", e => {
         if (!chatOpen) {
             chatOpen = true;
             chatInput.classList.remove("hidden");
+            chatMessagesDiv.style.overflow = "auto";
+            chatMessagesDiv.classList.add("chatOpen");
             chatInputField.focus();
         }
         return; // No procesar otros controles
@@ -487,7 +555,7 @@ document.addEventListener("keydown", e => {
             xPressTime = Date.now();
             isManualAiming = true;
             isAiming = true;
-        } else if (!isAttacking && attackCooldown <= 0 && currentWeapon !== "bow" && currentWeapon !== "fireball") {
+        } else if (!isAttacking && weaponCooldowns[currentWeapon] <= 0 && currentWeapon !== "bow" && currentWeapon !== "fireball") {
             performAttack();
         }
     }
@@ -536,7 +604,6 @@ document.addEventListener("keyup", e => {
             autoAimToClosestEnemy();
         }
         fireArrow();
-        attackCooldown = weapons["bow"].cooldown;
         isAiming = false;
         isManualAiming = false;
     }
@@ -554,7 +621,7 @@ document.addEventListener("mousemove", (e) => {
 
 // Click del mouse para lanzar bola de fuego
 canvas.addEventListener("click", (e) => {
-    if (gameStarted && !chatOpen && currentWeapon === "fireball" && attackCooldown <= 0) {
+    if (gameStarted && !chatOpen && currentWeapon === "fireball" && weaponCooldowns["fireball"] <= 0) {
         let rect = canvas.getBoundingClientRect();
         let clickX = e.clientX - rect.left;
         let clickY = e.clientY - rect.top;
@@ -563,8 +630,8 @@ canvas.addEventListener("click", (e) => {
         fireEffects.push({
             x: clickX,
             y: clickY,
-            life: 300,
-            maxLife: 300,
+            life: 500,
+            maxLife: 500,
             radius: 50
         });
         
@@ -580,7 +647,7 @@ canvas.addEventListener("click", (e) => {
             timestamp: Date.now()
         }).catch(err => console.error("Error al enviar bola de fuego:", err));
         
-        attackCooldown = weapons["fireball"].cooldown;
+        weaponCooldowns["fireball"] = weapons["fireball"].cooldown;
     }
 });
 
@@ -637,7 +704,7 @@ function performAttack() {
     if (closestEnemy) {
         isAttacking = true;
         targetEnemy = closestEnemy;
-        attackCooldown = weapon.cooldown;
+        weaponCooldowns[currentWeapon] = weapon.cooldown;
     }
 }
 
@@ -660,8 +727,8 @@ function updateAttack() {
                 fireEffects.push({
                     x: targetEnemy.enemy.x,
                     y: targetEnemy.enemy.y,
-                    life: 300,
-                    maxLife: 300,
+                    life: 500,
+                    maxLife: 500,
                     radius: 50
                 });
             } else {
@@ -676,14 +743,16 @@ function updateAttack() {
                     damage: damage,
                     targetId: targetEnemy.id,
                     attackerId: myId,
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
+                    killProcessed: false
                 }).catch(err => console.error("Error al enviar impacto:", err));
                 
                 impacts.push({
                     x: targetEnemy.enemy.x,
                     y: targetEnemy.enemy.y,
                     life: 20,
-                    maxLife: 20
+                    maxLife: 20,
+                    targetId: targetEnemy.id
                 });
                 
                 // Crear efecto de desintegración local si el enemigo muere
@@ -727,7 +796,8 @@ function updateAttack() {
                     damage: damage,
                     targetId: id,
                     attackerId: myId,
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
+                    killProcessed: false
                 }).catch(err => console.error("Error al enviar impacto:", err));
                 
                 impacts.push({
@@ -737,7 +807,7 @@ function updateAttack() {
                     maxLife: 20
                 });
                 arrows.splice(i, 1);
-                attackCooldown = weapons["bow"].cooldown;
+                weaponCooldowns["bow"] = weapons["bow"].cooldown;
                 break;
             }
         }
@@ -774,7 +844,7 @@ function updateAttack() {
                 });
                 
                 fireballs.splice(i, 1);
-                attackCooldown = weapons["fireball"].cooldown;
+                weaponCooldowns["fireball"] = weapons["fireball"].cooldown;
                 break;
             }
         }
@@ -820,9 +890,11 @@ function updateAttack() {
         }
     }
     
-    // Reducir cooldown
-    if (attackCooldown > 0) {
-        attackCooldown--;
+    // Reducir cooldowns de todas las armas
+    for (let weapon in weaponCooldowns) {
+        if (weaponCooldowns[weapon] > 0) {
+            weaponCooldowns[weapon]--;
+        }
     }
 }
 
@@ -845,6 +917,8 @@ function fireArrow() {
         playerId: myId,
         timestamp: Date.now()
     }).catch(err => console.error("Error al enviar flecha:", err));
+    
+    weaponCooldowns["bow"] = weapons["bow"].cooldown;
 }
 
 function fireFireball() {
@@ -853,8 +927,8 @@ function fireFireball() {
         y: pos.y,
         angle: aimAngle,
         speed: 5,
-        life: 300, // 5 segundos
-        maxLife: 300,
+        life: 500, // Duración más larga
+        maxLife: 500,
         radius: 50
     };
     fireballs.push(fireballData);
@@ -924,9 +998,19 @@ function startGameLoop() {
             if (!players[id]) {
                 // Crear efecto de desintegración cuando un jugador desaparece
                 createDisintegrationEffect(smoothPlayers[id].x, smoothPlayers[id].y, smoothPlayers[id].color);
+                
+                // Incrementar killstreak si fuimos nosotros quien eliminó
+                if (lastKillTime && Date.now() - lastKillTime < 500) {
+                    killStreak++;
+                    lastKillTime = Date.now();
+                }
+                
                 delete smoothPlayers[id];
             }
         }
+        
+        // Actualizar contador de jugadores y notificaciones
+        updatePlayerCount();
     });
 
     // =====================================================
@@ -975,6 +1059,11 @@ function startGameLoop() {
                 // Marcar como procesado
                 set(ref(db, "impacts/" + id + "/processed"), true).catch(err => console.error("Error al marcar impacto:", err));
                 
+                // Reiniciar killstreak cuando recibimos daño que nos mata
+                if (playerHealth <= 0) {
+                    killStreak = 0;
+                }
+                
                 // Verificar si el jugador fue eliminado
                 if (playerHealth <= 0 && gameStarted) {
                     gameStarted = false;
@@ -988,6 +1077,16 @@ function startGameLoop() {
                         for (let playerId in allPlayers) {
                             if (playerId === impact.attackerId) {
                                 eliminatedByName = allPlayers[playerId].username || "Desconocido";
+                                
+                                // Enviar mensaje de eliminación al chat
+                                const msgId = "msg_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+                                set(ref(db, "messages/" + msgId), {
+                                    username: "⚔️ SISTEMA",
+                                    message: `${eliminatedByName} ha eliminado a ${myUsername}`,
+                                    color: "#ff6600",
+                                    timestamp: Date.now()
+                                }).catch(err => console.error("Error al enviar mensaje de eliminación:", err));
+                                
                                 break;
                             }
                         }
@@ -1002,7 +1101,7 @@ function startGameLoop() {
                     // Respawnear después de 4 segundos
                     setTimeout(() => {
                         playerHealth = 500;
-                        pos = { x: 400, y: 300 };
+                        pos = { x: 600, y: 400 };
                         gameStarted = true;
                         isEliminated = false;
                         
@@ -1015,8 +1114,12 @@ function startGameLoop() {
                             health: playerHealth
                         }).catch(err => console.error("Error al respawnear:", err));
                     }, 4000);
+                    
+                    // Reiniciar killstreak cuando mueres
+                    killStreak = 0;
                 }
             }
+            
             
             // Decrementar vida del impacto
             let newLife = impact.life - 1;
@@ -1366,8 +1469,8 @@ function draw() {
     
     // Dibujar bolas de fuego sincronizadas desde otros jugadores (efecto de fuego completo)
     for (let fireball of syncedFireballs) {
-        let progress = 0.5; // Efecto constante para bolas de fuego sincronizadas
-        let opacity = 0.8;
+        let progress = (Date.now() % 1000) / 1000; // Animación basada en el tiempo actual
+        let opacity = Math.cos(progress * Math.PI) * 0.8; // Efecto pulsante
         
         // Círculo principal de fuego
         ctx.fillStyle = `rgba(255, 100, 0, ${opacity * 0.6})`;
@@ -1503,6 +1606,21 @@ function draw() {
     ctx.textAlign = "left";
     ctx.fillText(`Arma: ${weapon.name}`, 10, canvas.height - 10);
     
+    // Mostrar killstreak si está activo
+    if (killStreak > 0 && Date.now() - lastKillTime < KILLSTREAK_TIMEOUT) {
+        ctx.fillStyle = "rgba(255, 100, 0, 0.9)";
+        ctx.font = "bold 48px Arial";
+        ctx.textAlign = "center";
+        ctx.textShadow = "0 0 10px rgba(255, 100, 0, 0.8)";
+        ctx.fillText(`🔥 KILLSTREAK x${killStreak}`, canvas.width / 2, 80);
+        
+        // Efecto de brillo
+        ctx.strokeStyle = "rgba(255, 150, 0, 0.6)";
+        ctx.lineWidth = 2;
+        ctx.strokeText(`🔥 KILLSTREAK x${killStreak}`, canvas.width / 2, 80);
+    }
+    
+    
     // Mostrar pantalla de eliminación
     if (isEliminated) {
         const timeElapsed = Date.now() - eliminationTime;
@@ -1584,6 +1702,14 @@ function updateHealthBar() {
 }
 
 // =====================================================
+// CONTADOR DE JUGADORES ONLINE
+// =====================================================
+function updatePlayerCount() {
+    const currentCount = Object.keys(players).length;
+    onlineCountSpan.textContent = currentCount;
+}
+
+// =====================================================
 // LOOP
 // =====================================================
 function loop() {
@@ -1593,6 +1719,7 @@ function loop() {
         interpolate();
     }
     draw(); // Siempre dibujar (incluso cuando está eliminado)
+    updateInventoryUI(); // Actualizar cooldown visual en inventario
     requestAnimationFrame(loop);
 }
 
@@ -1619,6 +1746,31 @@ function updateInventoryUI() {
         } else {
             slot.classList.remove("active");
         }
+        
+        // Actualizar cooldown visual SOLO para el arma de fuego
+        const overlay = slot.querySelector(".cooldown-overlay");
+        const text = slot.querySelector(".cooldown-text");
+        
+        if (overlay) {
+            // Solo mostrar cooldown para fireball
+            if (weapon === "fireball") {
+                const weaponData = weapons[weapon];
+                const cooldownPercent = Math.max(0, (weaponCooldowns[weapon] / weaponData.cooldown) * 100);
+                overlay.style.height = cooldownPercent + "%";
+            } else {
+                overlay.style.height = "0%";
+            }
+        }
+        
+        if (text) {
+            // Solo mostrar texto de cooldown para fireball
+            if (weapon === "fireball" && weaponCooldowns[weapon] > 0) {
+                const cooldownSeconds = (weaponCooldowns[weapon] / 60).toFixed(1);
+                text.textContent = cooldownSeconds;
+            } else {
+                text.textContent = "";
+            }
+        }
     });
 }
 
@@ -1643,6 +1795,8 @@ function sendChatMessage() {
         // Cerrar chat
         chatOpen = false;
         chatInput.classList.add("hidden");
+        chatMessagesDiv.style.overflow = "hidden";
+        chatMessagesDiv.classList.remove("chatOpen");
     }
 }
 
@@ -1669,10 +1823,30 @@ function listenToChat() {
             });
         }
         
+        // Detectar cuando alguien es eliminado y actualizar killstreak
+        msgArray.forEach(m => {
+            if (m.message && m.message.includes("ha eliminado a") && m.message.includes(myUsername)) {
+                // Si fuimos nosotros quien eliminó
+                if (m.message.startsWith(myUsername)) {
+                    killStreak++;
+                    lastKillTime = Date.now();
+                }
+            }
+        });
+        
         // Mostrar últimos 20 mensajes
         chatMessagesDiv.innerHTML = msgArray.slice(-20).map(m => 
             `<div class="chatMsg"><span class="username" style="color:${m.color}">${m.username}:</span> ${m.message}</div>`
         ).join("");
+        
+        // Mantener el overflow y estilos sincronizados con el estado del chat
+        if (chatOpen) {
+            chatMessagesDiv.style.overflow = "auto";
+            chatMessagesDiv.classList.add("chatOpen");
+        } else {
+            chatMessagesDiv.style.overflow = "hidden";
+            chatMessagesDiv.classList.remove("chatOpen");
+        }
         
         chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
     });
@@ -1688,6 +1862,7 @@ window.addEventListener("beforeunload", () => {
 });
 
 </script>
+
 
 </body>
 </html>
