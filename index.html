@@ -381,6 +381,13 @@ let syncedImpacts = [];
 
 // Estado del chat
 let chatOpen = false;
+
+// Variables de eliminación
+let isEliminated = false;
+let eliminationTime = 0;
+let eliminatedByName = "";
+let disintegrationEffects = [];
+
 // SISTEMA DE LOGIN
 // =====================================================
 const loginScreen = document.getElementById("loginScreen");
@@ -960,6 +967,48 @@ function startGameLoop() {
                 
                 // Marcar como procesado
                 set(ref(db, "impacts/" + id + "/processed"), true).catch(err => console.error("Error al marcar impacto:", err));
+                
+                // Verificar si el jugador fue eliminado
+                if (playerHealth <= 0 && gameStarted) {
+                    gameStarted = false;
+                    isEliminated = true;
+                    eliminationTime = Date.now();
+                    eliminatedByName = "Desconocido";
+                    
+                    // Obtener el nombre del atacante
+                    get(ref(db, "players")).then(snapshot => {
+                        const allPlayers = snapshot.val() || {};
+                        for (let playerId in allPlayers) {
+                            if (playerId === impact.attackerId) {
+                                eliminatedByName = allPlayers[playerId].username || "Desconocido";
+                                break;
+                            }
+                        }
+                    });
+                    
+                    // Crear efecto de desintegración
+                    createDisintegrationEffect(pos.x, pos.y, myColor);
+                    
+                    // Eliminar al jugador de Firebase
+                    remove(ref(db, "players/" + myId)).catch(err => console.error("Error al eliminar jugador:", err));
+                    
+                    // Respawnear después de 4 segundos
+                    setTimeout(() => {
+                        playerHealth = 500;
+                        pos = { x: 400, y: 300 };
+                        gameStarted = true;
+                        isEliminated = false;
+                        
+                        // Registrar de nuevo en Firebase
+                        set(ref(db, "players/" + myId), {
+                            x: pos.x,
+                            y: pos.y,
+                            color: myColor,
+                            username: myUsername,
+                            health: playerHealth
+                        }).catch(err => console.error("Error al respawnear:", err));
+                    }, 4000);
+                }
             }
             
             // Decrementar vida del impacto
@@ -1393,8 +1442,6 @@ function draw() {
             let py = fireball.y + Math.sin(angle) * 18;
             ctx.fillStyle = "rgba(255, 150, 0, 0.6)";
             ctx.beginPath();
-            ctx.arc(px, py, 4, 0, Math.PI * 2);
-            ctx.fill();
         }
     }
     
@@ -1405,8 +1452,61 @@ function draw() {
     ctx.textAlign = "left";
     ctx.fillText(`Arma: ${weapon.name}`, 10, canvas.height - 10);
     
+    // Mostrar pantalla de eliminación
+    if (isEliminated) {
+        const timeElapsed = Date.now() - eliminationTime;
+        const timeRemaining = Math.max(0, 4000 - timeElapsed);
+        const secondsRemaining = Math.ceil(timeRemaining / 1000);
+        
+        // Fondo oscuro
+        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Texto principal
+        ctx.fillStyle = "#ff0000";
+        ctx.font = "bold 60px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("¡HAS SIDO ELIMINADO!", canvas.width / 2, canvas.height / 2 - 60);
+        
+        // Nombre del atacante
+        ctx.fillStyle = "#ffff00";
+        ctx.font = "bold 30px Arial";
+        ctx.fillText(`Eliminado por: ${eliminatedByName}`, canvas.width / 2, canvas.height / 2 + 20);
+        
+        // Cuenta regresiva
+        ctx.fillStyle = "#00ffff";
+        ctx.font = "bold 40px Arial";
+        ctx.fillText(`Respawneando en: ${secondsRemaining}s`, canvas.width / 2, canvas.height / 2 + 80);
+    }
+    
     // Actualizar barra de vida en el DOM
     updateHealthBar();
+}
+
+// =====================================================
+// EFECTO DE DESINTEGRACIÓN
+// =====================================================
+function createDisintegrationEffect(x, y, color) {
+    const particleCount = 30;
+    for (let i = 0; i < particleCount; i++) {
+        const angle = (Math.PI * 2 / particleCount) * i + (Math.random() - 0.5) * 0.5;
+        const speed = 3 + Math.random() * 5;
+        const size = 3 + Math.random() * 8;
+        
+        disintegrationEffects.push({
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 60,
+            maxLife: 60,
+            size: size,
+            color: color,
+            rotation: Math.random() * Math.PI * 2,
+            rotationSpeed: (Math.random() - 0.5) * 0.2
+        });
+    }
 }
 
 // =====================================================
@@ -1438,8 +1538,8 @@ function loop() {
         updateMovement();
         updateAttack();
         interpolate();
-        draw();
     }
+    draw(); // Siempre dibujar (incluso cuando está eliminado)
     requestAnimationFrame(loop);
 }
 
