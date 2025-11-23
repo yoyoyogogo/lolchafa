@@ -99,6 +99,19 @@
     border: 2px solid #00ff00;
     box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
   }
+  #killCounter {
+    position: fixed;
+    top: 55px;
+    right: 10px;
+    color: #ff6600;
+    font-size: 14px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px 15px;
+    border-radius: 8px;
+    z-index: 100;
+    border: 2px solid #ff6600;
+    box-shadow: 0 0 10px rgba(255, 102, 0, 0.3);
+  }
   #inventoryBar {
     position: fixed;
     bottom: 20px;
@@ -315,6 +328,10 @@
   👥 Jugadores Online: <span id="onlineCount">0</span>
 </div>
 
+<div id="killCounter">
+  ⚔️ Kills: <span id="killCount">0</span>
+</div>
+
 <div id="healthBar" class="">
   <div id="healthBarFill" style="width: 100%; background: linear-gradient(90deg, #00ff00, #00cc00);"></div>
   <div id="healthText">500/500</div>
@@ -406,6 +423,7 @@ const FIREBALL_ENERGY_COST = 30; // Energía consumida por bola de fuego
 let killStreak = 0; // Contador de muertes consecutivas
 let lastKillTime = 0; // Timestamp del último asesinato
 const KILLSTREAK_TIMEOUT = 10000; // 10 segundos para mantener la racha activa
+let totalKills = 0; // Contador total de kills en la sesión
 
 // Sistema de Dash
 let isDashing = false;
@@ -555,6 +573,8 @@ const chatInputField = document.getElementById("chatInputField");
 const chatSendBtn = document.getElementById("chatSendBtn");
 const playerCountDiv = document.getElementById("playerCount");
 const onlineCountSpan = document.getElementById("onlineCount");
+const killCounterDiv = document.getElementById("killCounter");
+const killCountSpan = document.getElementById("killCount");
 
 // Verificar si hay usuario guardado
 const savedUsername = localStorage.getItem("amongUsUsername");
@@ -608,6 +628,11 @@ async function startGame() {
     document.getElementById("inventoryBar").classList.remove("hidden");
     document.getElementById("healthBar").classList.remove("hidden");
     currentUserSpan.textContent = myUsername;
+
+    // Reinicializar contador de kills
+    totalKills = 0;
+    killStreak = 0;
+    updateKillCounter();
 
     gameStarted = true;
     startGameLoop();
@@ -1184,21 +1209,6 @@ function startGameLoop() {
                 // Crear efecto de desintegración cuando un jugador desaparece
                 createDisintegrationEffect(smoothPlayers[id].x, smoothPlayers[id].y, smoothPlayers[id].color);
                 
-                // Incrementar killstreak solo si fuimos nosotros quien eliminó a este jugador
-                // Verificar en los impactos recientes si fuimos el atacante
-                get(ref(db, "impacts")).then(snapshot => {
-                    const impactsData = snapshot.val() || {};
-                    for (let impactId in impactsData) {
-                        let impact = impactsData[impactId];
-                        // Si fuimos nosotros quien atacó a este jugador recientemente
-                        if (impact.attackerId === myId && impact.targetId === id && Date.now() - impact.timestamp < 1000) {
-                            killStreak++;
-                            lastKillTime = Date.now();
-                            break;
-                        }
-                    }
-                }).catch(err => console.error("Error al verificar kills:", err));
-                
                 delete smoothPlayers[id];
             }
         }
@@ -1244,6 +1254,28 @@ function startGameLoop() {
         
         for (let id in impactsData) {
             let impact = impactsData[id];
+            
+            // Detectar cuando YO elimino a alguien (impacto que yo lancé)
+            if (impact.attackerId === myId && impact.targetId && !impact.killProcessed && players[impact.targetId] && players[impact.targetId].health <= 0) {
+                // Marcar como procesado para no contar múltiples veces
+                set(ref(db, "impacts/" + id + "/killProcessed"), true).catch(err => console.error("Error al marcar kill:", err));
+                
+                // Incrementar kills INMEDIATAMENTE
+                totalKills++;
+                killStreak++;
+                lastKillTime = Date.now();
+                updateKillCounter();
+                
+                // Enviar mensaje de kill al chat
+                const victimName = players[impact.targetId]?.username || "Desconocido";
+                const msgId = "msg_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+                set(ref(db, "messages/" + msgId), {
+                    username: "⚔️ SISTEMA",
+                    message: `${myUsername} ha eliminado a ${victimName}`,
+                    color: "#ff6600",
+                    timestamp: Date.now()
+                }).catch(err => console.error("Error al enviar mensaje de kill:", err));
+            }
             
             // NOTA: El killstreak se incrementa cuando el jugador es eliminado (health <= 0)
             // No aquí, porque aquí se cuenta cada impacto/daño
@@ -1962,6 +1994,13 @@ function updatePlayerCount() {
 }
 
 // =====================================================
+// CONTADOR DE KILLS
+// =====================================================
+function updateKillCounter() {
+    killCountSpan.textContent = totalKills;
+}
+
+// =====================================================
 // LOOP
 // =====================================================
 function loop() {
@@ -2077,9 +2116,21 @@ function listenToChat() {
             });
         }
         
-        // Detectar cuando alguien es eliminado y actualizar killstreak
-        // NOTA: El killstreak se actualiza en el listener de impactos, no aquí
-        // Esta sección solo es para mostrar los mensajes, no para contar kills
+        // Detectar cuando YO elimino a alguien (mensaje del SISTEMA con mi nombre)
+        msgArray.forEach(msg => {
+            if (msg.username === "⚔️ SISTEMA" && msg.message.includes("ha eliminado a") && msg.message.startsWith(myUsername)) {
+                // Verificar si ya contamos este kill
+                if (!msg.killCounted) {
+                    totalKills++;
+                    killStreak++;
+                    lastKillTime = Date.now();
+                    updateKillCounter();
+                    
+                    // Marcar como contado
+                    set(ref(db, "messages/" + msg.key + "/killCounted"), true).catch(err => console.error("Error al marcar kill contado:", err));
+                }
+            }
+        });
         
         // Mostrar últimos 20 mensajes
         chatMessagesDiv.innerHTML = msgArray.slice(-20).map(m => 
