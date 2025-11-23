@@ -400,6 +400,11 @@
     <div class="cooldown-overlay" style="height: 0%;"></div>
     <div class="cooldown-text"></div>
   </div>
+  <div class="inventory-slot" data-weapon="boomerang">
+    <div>🪃<br>Boomerang<br><small>N</small></div>
+    <div class="cooldown-overlay" style="height: 0%;"></div>
+    <div class="cooldown-text"></div>
+  </div>
 </div>
 
 <canvas id="game" width="1600" height="1000"></canvas>
@@ -505,7 +510,8 @@ let weaponCooldowns = {
     fist: 0,
     sword: 0,
     bow: 0,
-    fireball: 0
+    fireball: 0,
+    boomerang: 0
 };
 
 // Variables de arco y bola de fuego
@@ -514,8 +520,10 @@ let isManualAiming = false;
 let aimAngle = 0;
 let arrows = [];
 let fireballs = [];
+let boomerangs = [];
 let syncedArrows = [];
 let syncedFireballs = [];
+let syncedBoomerangs = [];
 let xPressTime = 0;
 
 // Control de foco de ventana
@@ -820,6 +828,14 @@ document.addEventListener("keydown", e => {
         isManualAiming = false;
         updateInventoryUI();
     }
+    
+    // Cambiar a boomerang con N
+    if ((e.key === "n" || e.key === "N")) {
+        currentWeapon = "boomerang";
+        isAiming = false;
+        isManualAiming = false;
+        updateInventoryUI();
+    }
 });
 
 document.addEventListener("keyup", e => {
@@ -850,9 +866,58 @@ document.addEventListener("mousemove", (e) => {
     }
 });
 
-// Click del mouse para lanzar bola de fuego
+// Click del mouse para lanzar bola de fuego o boomerang
 canvas.addEventListener("click", (e) => {
-    if (gameStarted && !chatOpen && !isEliminated && currentWeapon === "fireball" && weaponCooldowns["fireball"] <= 0 && playerEnergy >= FIREBALL_ENERGY_COST) {
+    if (gameStarted && !chatOpen && !isEliminated && currentWeapon === "boomerang" && weaponCooldowns["boomerang"] <= 0) {
+        // Lanzar boomerang
+        let rect = canvas.getBoundingClientRect();
+        let clickX = e.clientX - rect.left;
+        let clickY = e.clientY - rect.top;
+        
+        // Convertir coordenadas de pantalla a coordenadas del mapa
+        let mapClickX = clickX + cameraX;
+        let mapClickY = clickY + cameraY;
+        
+        // Calcular ángulo y distancia
+        let dx = mapClickX - pos.x;
+        let dy = mapClickY - pos.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        let angle = Math.atan2(dy, dx);
+        
+        // Crear boomerang local
+        const boomerangData = {
+            x: pos.x,
+            y: pos.y,
+            angle: angle,
+            distance: Math.min(distance, 350), // Limitar a rango máximo
+            speed: 10,
+            maxDistance: Math.min(distance, 350),
+            returning: false,
+            returnStartX: 0,
+            returnStartY: 0,
+            traveledDistance: 0,
+            playerId: myId,
+            timestamp: Date.now(),
+            hasHit: false,
+            hitPlayers: []
+        };
+        
+        boomerangs.push(boomerangData);
+        
+        // Enviar boomerang a Firebase
+        const boomerangId = "boomerang_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+        set(ref(db, "boomerangs/" + boomerangId), {
+            x: boomerangData.x,
+            y: boomerangData.y,
+            angle: boomerangData.angle,
+            distance: boomerangData.distance,
+            speed: boomerangData.speed,
+            playerId: myId,
+            timestamp: Date.now()
+        }).catch(err => console.error("Error al enviar boomerang:", err));
+        
+        weaponCooldowns["boomerang"] = weapons["boomerang"].cooldown;
+    } else if (gameStarted && !chatOpen && !isEliminated && currentWeapon === "fireball" && weaponCooldowns["fireball"] <= 0 && playerEnergy >= FIREBALL_ENERGY_COST) {
         let rect = canvas.getBoundingClientRect();
         let clickX = e.clientX - rect.left;
         let clickY = e.clientY - rect.top;
@@ -1132,6 +1197,118 @@ function updateAttack() {
                 weaponCooldowns["bow"] = weapons["bow"].cooldown;
                 break;
             }
+        }
+    }
+    
+    // Actualizar boomerangs
+    for (let i = boomerangs.length - 1; i >= 0; i--) {
+        let boomerang = boomerangs[i];
+        
+        if (!boomerang.returning) {
+            // Fase de ida
+            boomerang.x += Math.cos(boomerang.angle) * boomerang.speed;
+            boomerang.y += Math.sin(boomerang.angle) * boomerang.speed;
+            boomerang.traveledDistance += boomerang.speed;
+            
+            // Si llegó a la distancia máxima, comienza a regresar
+            if (boomerang.traveledDistance >= boomerang.maxDistance) {
+                boomerang.returning = true;
+                boomerang.returnStartX = boomerang.x;
+                boomerang.returnStartY = boomerang.y;
+                boomerang.traveledDistance = 0;
+            }
+            
+            // Detectar colisión con enemigos en la ida
+            for (let id in smoothPlayers) {
+                if (id === myId || boomerang.hitPlayers.includes(id)) continue;
+                
+                let enemy = smoothPlayers[id];
+                let dx = enemy.x - boomerang.x;
+                let dy = enemy.y - boomerang.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < 20) {
+                    // Enviar impacto a Firebase
+                    const impactId = "impact_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+                    const damage = weapons["boomerang"].damage;
+                    set(ref(db, "impacts/" + impactId), {
+                        x: boomerang.x,
+                        y: boomerang.y,
+                        life: 20,
+                        maxLife: 20,
+                        damage: damage,
+                        targetId: id,
+                        attackerId: myId,
+                        timestamp: Date.now(),
+                        killProcessed: false
+                    }).catch(err => console.error("Error al enviar impacto:", err));
+                    
+                    impacts.push({
+                        x: boomerang.x,
+                        y: boomerang.y,
+                        life: 20,
+                        maxLife: 20
+                    });
+                    
+                    boomerang.hitPlayers.push(id);
+                }
+            }
+        } else {
+            // Fase de regreso
+            let dx = pos.x - boomerang.x;
+            let dy = pos.y - boomerang.y;
+            let distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 10) {
+                boomerang.x += (dx / distance) * boomerang.speed;
+                boomerang.y += (dy / distance) * boomerang.speed;
+                boomerang.traveledDistance += boomerang.speed;
+            } else {
+                // El boomerang regresó al jugador
+                boomerangs.splice(i, 1);
+                continue;
+            }
+            
+            // Detectar colisión con enemigos en el regreso
+            for (let id in smoothPlayers) {
+                if (id === myId || boomerang.hitPlayers.includes(id)) continue;
+                
+                let enemy = smoothPlayers[id];
+                let dx = enemy.x - boomerang.x;
+                let dy = enemy.y - boomerang.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < 20) {
+                    // Enviar impacto a Firebase
+                    const impactId = "impact_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+                    const damage = weapons["boomerang"].damage;
+                    set(ref(db, "impacts/" + impactId), {
+                        x: boomerang.x,
+                        y: boomerang.y,
+                        life: 20,
+                        maxLife: 20,
+                        damage: damage,
+                        targetId: id,
+                        attackerId: myId,
+                        timestamp: Date.now(),
+                        killProcessed: false
+                    }).catch(err => console.error("Error al enviar impacto:", err));
+                    
+                    impacts.push({
+                        x: boomerang.x,
+                        y: boomerang.y,
+                        life: 20,
+                        maxLife: 20
+                    });
+                    
+                    boomerang.hitPlayers.push(id);
+                }
+            }
+        }
+        
+        // Eliminar si sale del mapa
+        if (boomerang.x < 0 || boomerang.x > MAP_WIDTH || boomerang.y < 0 || boomerang.y > MAP_HEIGHT) {
+            boomerangs.splice(i, 1);
         }
     }
     
@@ -1662,6 +1839,39 @@ function startGameLoop() {
         }
     });
 
+    // =====================================================
+    // ESCUCHAR BOOMERANGS
+    // =====================================================
+    onValue(ref(db, "boomerangs"), snapshot => {
+        const boomerangsData = snapshot.val() || {};
+        syncedBoomerangs = [];
+        
+        for (let id in boomerangsData) {
+            let boomerang = boomerangsData[id];
+            // Solo mostrar boomerangs de otros jugadores
+            if (boomerang.playerId !== myId) {
+                syncedBoomerangs.push({
+                    id: id,
+                    x: boomerang.x,
+                    y: boomerang.y,
+                    angle: boomerang.angle,
+                    speed: boomerang.speed,
+                    distance: boomerang.distance,
+                    playerId: boomerang.playerId,
+                    timestamp: boomerang.timestamp
+                });
+            }
+        }
+        
+        // Limpiar boomerangs antiguos (más de 10 segundos)
+        const now3 = Date.now();
+        for (let id in boomerangsData) {
+            if (now3 - boomerangsData[id].timestamp > 10000) {
+                remove(ref(db, "boomerangs/" + id)).catch(err => console.error("Error al eliminar boomerang:", err));
+            }
+        }
+    });
+
     loop();
 }
 
@@ -2058,6 +2268,50 @@ function draw() {
         ctx.moveTo(8, 0);
         ctx.lineTo(-12, 0);
         ctx.stroke();
+        
+        ctx.restore();
+    }
+    
+    // Dibujar boomerangs locales
+    for (let boomerang of boomerangs) {
+        ctx.save();
+        ctx.translate(boomerang.x, boomerang.y);
+        ctx.rotate(boomerang.angle);
+        
+        // Dibujar boomerang (forma de C)
+        ctx.strokeStyle = "rgba(200, 100, 255, 0.9)";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(0, 0, 10, 0, Math.PI * 1.5);
+        ctx.stroke();
+        
+        // Punta del boomerang
+        ctx.fillStyle = "rgba(200, 100, 255, 0.9)";
+        ctx.beginPath();
+        ctx.arc(10, 0, 3, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.restore();
+    }
+    
+    // Dibujar boomerangs sincronizados desde otros jugadores
+    for (let boomerang of syncedBoomerangs) {
+        ctx.save();
+        ctx.translate(boomerang.x, boomerang.y);
+        ctx.rotate(boomerang.angle);
+        
+        // Dibujar boomerang (forma de C)
+        ctx.strokeStyle = "rgba(200, 100, 255, 0.7)";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(0, 0, 10, 0, Math.PI * 1.5);
+        ctx.stroke();
+        
+        // Punta del boomerang
+        ctx.fillStyle = "rgba(200, 100, 255, 0.7)";
+        ctx.beginPath();
+        ctx.arc(10, 0, 3, 0, Math.PI * 2);
+        ctx.fill();
         
         ctx.restore();
     }

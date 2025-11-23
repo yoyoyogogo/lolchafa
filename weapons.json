@@ -5,7 +5,7 @@
       "emoji": "👊",
       "range": 150,
       "speed": 8,
-      "cooldown": 0,
+      "cooldown": 30,
       "damage": 25,
       "energyCost": 0,
       "color": "rgba(255, 100, 100, 0.8)",
@@ -43,6 +43,17 @@
       "energyCost": 30,
       "color": "rgba(255, 100, 0, 0.9)",
       "description": "Arma poderosa que consume energía"
+    },
+    "boomerang": {
+      "name": "Boomerang",
+      "emoji": "🪃",
+      "range": 350,
+      "speed": 10,
+      "cooldown": 25,
+      "damage": 40,
+      "energyCost": 0,
+      "color": "rgba(200, 100, 255, 0.8)",
+      "description": "Arma que regresa después de golpear"
     }
   },
   "gameSettings": {
