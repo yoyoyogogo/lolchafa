@@ -1,0 +1,60 @@
+{
+  "weapons": {
+    "fist": {
+      "name": "Puño",
+      "emoji": "👊",
+      "range": 150,
+      "speed": 8,
+      "cooldown": 30,
+      "damage": 25,
+      "energyCost": 0,
+      "color": "rgba(255, 100, 100, 0.8)",
+      "description": "Ataque rápido y sin costo de energía"
+    },
+    "sword": {
+      "name": "Espada",
+      "emoji": "⚔️",
+      "range": 200,
+      "speed": 10,
+      "cooldown": 15,
+      "damage": 50,
+      "energyCost": 0,
+      "color": "rgba(100, 200, 255, 0.8)",
+      "description": "Arma equilibrada con buen daño"
+    },
+    "bow": {
+      "name": "Arco",
+      "emoji": "🏹",
+      "range": 400,
+      "speed": 12,
+      "cooldown": 20,
+      "damage": 35,
+      "energyCost": 0,
+      "color": "rgba(200, 150, 100, 0.8)",
+      "description": "Arma de largo alcance"
+    },
+    "fireball": {
+      "name": "🔥 Bola de Fuego",
+      "emoji": "🔥",
+      "range": 300,
+      "speed": 6,
+      "cooldown": 60,
+      "damage": 60000,
+      "energyCost": 30,
+      "color": "rgba(255, 100, 0, 0.9)",
+      "description": "Arma poderosa que consume energía"
+    }
+  },
+  "gameSettings": {
+    "playerMaxHealth": 500,
+    "playerMaxEnergy": 100,
+    "energyRegenRate": 0.3,
+    "dashCooldown": 40,
+    "dashSpeed": 8,
+    "dashDuration": 15,
+    "shieldDuration": 3000,
+    "killstreakTimeout": 10000,
+    "mapWidth": 1600,
+    "mapHeight": 1000
+  }
+}

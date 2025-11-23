@@ -240,36 +240,65 @@
     position: fixed;
     top: 60px;
     left: 10px;
-    width: 200px;
-    height: 30px;
+    width: 150px;
+    height: 20px;
     background: rgba(0, 0, 0, 0.8);
-    border: 2px solid #00ffff;
-    border-radius: 15px;
-    padding: 5px;
+    border: 2px solid #00ff00;
+    border-radius: 10px;
+    padding: 3px;
     z-index: 100;
     display: flex;
     align-items: center;
-    gap: 10px;
   }
   #healthBarFill {
     height: 100%;
     background: linear-gradient(90deg, #00ff00, #00cc00);
-    border-radius: 12px;
+    border-radius: 8px;
     transition: width 0.3s ease;
     box-shadow: 0 0 10px rgba(0, 255, 0, 0.6);
   }
   #healthText {
-    color: #00ffff;
+    color: #00ff00;
     font-weight: bold;
-    font-size: 14px;
-    min-width: 50px;
+    font-size: 11px;
+    position: absolute;
+    right: 5px;
+    text-align: right;
+  }
+  #energyBar {
+    position: fixed;
+    top: 95px;
+    left: 10px;
+    width: 150px;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #0099ff;
+    border-radius: 10px;
+    padding: 3px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+  }
+  #energyBarFill {
+    height: 100%;
+    background: linear-gradient(90deg, #0099ff, #00ccff);
+    border-radius: 8px;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px rgba(0, 153, 255, 0.6);
+  }
+  #energyText {
+    color: #0099ff;
+    font-weight: bold;
+    font-size: 11px;
+    position: absolute;
+    right: 5px;
     text-align: right;
   }
 </style>
 </head>
 <body>
 
-<div id="loginScreen" class="hidden">
+<div id="loginScreen" class="">
   <div id="loginBox">
     <h1>🚀 AMONG US</h1>
     <input type="text" id="usernameInput" placeholder="Ingresa tu nombre de usuario" maxlength="15">
@@ -287,8 +316,13 @@
 </div>
 
 <div id="healthBar" class="">
-  <div id="healthBarFill" style="width: 30%; background: linear-gradient(90deg, rgb(255, 255, 0), rgb(255, 204, 0));"></div>
-  <div id="healthText">150/500</div>
+  <div id="healthBarFill" style="width: 100%; background: linear-gradient(90deg, #00ff00, #00cc00);"></div>
+  <div id="healthText">500/500</div>
+</div>
+
+<div id="energyBar" class="">
+  <div id="energyBarFill" style="width: 100%; background: linear-gradient(90deg, #0099ff, #00ccff);"></div>
+  <div id="energyText">100/100</div>
 </div>
 
 <div id="inventoryBar" class="">
@@ -314,7 +348,7 @@
   </div>
 </div>
 
-<canvas id="game" width="1200" height="800"></canvas>
+<canvas id="game" width="1600" height="1000"></canvas>
 
 <div id="chatMessages"><div class="chatMsg"><span class="username" style="color:hsl(335.10160560358645, 70%, 60%)">Ola783:</span> Aver matame</div><div class="chatMsg"><span class="username" style="color:hsl(103.08063270411074, 70%, 60%)">Paspias:</span> per</div><div class="chatMsg"><span class="username" style="color:hsl(103.08063270411074, 70%, 60%)">Paspias:</span> hola</div><div class="chatMsg"><span class="username" style="color:hsl(284.50946469035506, 70%, 60%)">Ola783:</span> Porque no puedo morir?</div><div class="chatMsg"><span class="username" style="color:hsl(103.08063270411074, 70%, 60%)">Paspias:</span> reinicia</div><div class="chatMsg"><span class="username" style="color:hsl(284.50946469035506, 70%, 60%)">Ola783:</span> voy</div><div class="chatMsg"><span class="username" style="color:hsl(103.08063270411074, 70%, 60%)">Paspias:</span> la pagina</div><div class="chatMsg"><span class="username" style="color:hsl(270.27399339043194, 70%, 60%)">Ola783:</span> Ya lo hice</div><div class="chatMsg"><span class="username" style="color:hsl(293.0859094721852, 70%, 60%)">Paspias:</span> ya si?</div><div class="chatMsg"><span class="username" style="color:hsl(293.0859094721852, 70%, 60%)">Paspias:</span> eliminame</div><div class="chatMsg"><span class="username" style="color:hsl(270.27399339043194, 70%, 60%)">Ola783:</span> volveme a matar, quiero mandarte algo</div><div class="chatMsg"><span class="username" style="color:hsl(143.8741763534864, 70%, 60%)">Ola783:</span> si?</div><div class="chatMsg"><span class="username" style="color:hsl(316.3253610300013, 70%, 60%)">Paspias:</span> dinero</div><div class="chatMsg"><span class="username" style="color:hsl(206.370661446054, 70%, 60%)">Paspias:</span> como se ve</div><div class="chatMsg"><span class="username" style="color:hsl(231.89982431897832, 70%, 60%)">Ola783:</span> ESTA RE ZARPADO</div><div class="chatMsg"><span class="username" style="color:hsl(206.370661446054, 70%, 60%)">Paspias:</span> oye</div><div class="chatMsg"><span class="username" style="color:hsl(231.89982431897832, 70%, 60%)">Ola783:</span> si?</div><div class="chatMsg"><span class="username" style="color:hsl(206.370661446054, 70%, 60%)">Paspias:</span> mandame foto de la pantalla de muerte</div><div class="chatMsg"><span class="username" style="color:hsl(206.370661446054, 70%, 60%)">Paspias:</span> gg</div><div class="chatMsg"><span class="username" style="color:hsl(140.0391965009375, 70%, 60%)">Paspias:</span> li</div></div>
 
@@ -365,9 +399,29 @@ let pos = { x: 400, y: 300 };
 let keys = {};
 let speed = 2.2;
 let playerHealth = 500; // Vida del jugador
+let playerEnergy = 100; // Energía del jugador (para fuego)
+const MAX_ENERGY = 100;
+const ENERGY_REGEN_RATE = 0.3; // Energía regenerada por frame
+const FIREBALL_ENERGY_COST = 30; // Energía consumida por bola de fuego
 let killStreak = 0; // Contador de muertes consecutivas
 let lastKillTime = 0; // Timestamp del último asesinato
 const KILLSTREAK_TIMEOUT = 10000; // 10 segundos para mantener la racha activa
+
+// Sistema de Dash
+let isDashing = false;
+let dashDirection = { x: 0, y: 0 };
+let dashSpeed = 8;
+let dashDuration = 15; // frames
+let dashFrames = 0;
+let dashCooldown = 0;
+const DASH_COOLDOWN = 40; // frames entre dashes
+
+// Sistema de Escudo Post-Respawn
+let hasShield = false;
+let shieldTime = 0;
+let shieldStartTime = 0;
+const SHIELD_DURATION = 3000; // 3 segundos de invulnerabilidad
+let shieldTimeoutId = null; // Para limpiar el escudo si se desconecta
 
 let gameStarted = false;
 
@@ -394,42 +448,77 @@ let syncedArrows = [];
 let syncedFireballs = [];
 let xPressTime = 0;
 
-// Sistema de armas
+// Sistema de armas - Se carga desde weapons.json
 let currentWeapon = "fist"; // "fist", "sword", "bow" o "fireball"
-let weapons = {
-    fist: {
-        name: "Puño",
-        range: 150,
-        speed: 8,
-        cooldown: 30,
-        damage: 25,
-        color: "rgba(255, 100, 100, 0.8)"
-    },
-    sword: {
-        name: "Espada",
-        range: 200,
-        speed: 10,
-        cooldown: 15,
-        damage: 50,
-        color: "rgba(100, 200, 255, 0.8)"
-    },
-    bow: {
-        name: "Arco",
-        range: 400,
-        speed: 12,
-        cooldown: 20,
-        damage: 35,
-        color: "rgba(200, 150, 100, 0.8)"
-    },
-    fireball: {
-        name: "🔥 Bola de Fuego",
-        range: 300,
-        speed: 6,
-        cooldown: 60,
-        damage: 60,
-        color: "rgba(255, 100, 0, 0.9)"
+let weapons = {};
+let gameConfig = {};
+
+// Cargar configuración desde JSON
+async function loadWeaponsConfig() {
+    try {
+        const response = await fetch('weapons.json');
+        const data = await response.json();
+        weapons = data.weapons;
+        gameConfig = data.gameSettings;
+        
+        // Actualizar variables globales con los valores del JSON
+        playerHealth = gameConfig.playerMaxHealth;
+        playerEnergy = gameConfig.playerMaxEnergy;
+        
+        console.log("✅ Configuración de armas cargada desde weapons.json");
+    } catch (error) {
+        console.error("❌ Error al cargar weapons.json:", error);
+        // Usar valores por defecto si falla la carga
+        loadDefaultWeapons();
     }
-};
+}
+
+// Valores por defecto si no se puede cargar el JSON
+function loadDefaultWeapons() {
+    weapons = {
+        fist: {
+            name: "Puño",
+            range: 150,
+            speed: 8,
+            cooldown: 30,
+            damage: 25,
+            energyCost: 0,
+            color: "rgba(255, 100, 100, 0.8)"
+        },
+        sword: {
+            name: "Espada",
+            range: 200,
+            speed: 10,
+            cooldown: 15,
+            damage: 50,
+            energyCost: 0,
+            color: "rgba(100, 200, 255, 0.8)"
+        },
+        bow: {
+            name: "Arco",
+            range: 400,
+            speed: 12,
+            cooldown: 20,
+            damage: 35,
+            energyCost: 0,
+            color: "rgba(200, 150, 100, 0.8)"
+        },
+        fireball: {
+            name: "🔥 Bola de Fuego",
+            range: 300,
+            speed: 6,
+            cooldown: 60,
+            damage: 60,
+            energyCost: 30,
+            color: "rgba(255, 100, 0, 0.9)"
+        }
+    };
+    gameConfig = {
+        playerMaxHealth: 500,
+        playerMaxEnergy: 100,
+        energyRegenRate: 0.3
+    };
+}
 
 // Efectos de impacto
 let impacts = [];
@@ -494,6 +583,9 @@ async function startGame() {
         return;
     }
 
+    // Cargar configuración de armas desde JSON
+    await loadWeaponsConfig();
+
     myUsername = username;
     myId = "player_" + username.toLowerCase().replace(/\s+/g, "_");
 
@@ -545,6 +637,13 @@ document.addEventListener("keydown", e => {
     
     // Si el chat está abierto, no procesar controles del juego
     if (chatOpen) return;
+    
+    // Dash con ESPACIO
+    if (e.code === "Space" && gameStarted && !isDashing && dashCooldown <= 0) {
+        e.preventDefault();
+        performDash();
+        return;
+    }
     
     keys[e.key] = true;
     keys[e.key.toLowerCase()] = true;
@@ -621,10 +720,14 @@ document.addEventListener("mousemove", (e) => {
 
 // Click del mouse para lanzar bola de fuego
 canvas.addEventListener("click", (e) => {
-    if (gameStarted && !chatOpen && currentWeapon === "fireball" && weaponCooldowns["fireball"] <= 0) {
+    if (gameStarted && !chatOpen && currentWeapon === "fireball" && weaponCooldowns["fireball"] <= 0 && playerEnergy >= FIREBALL_ENERGY_COST) {
         let rect = canvas.getBoundingClientRect();
         let clickX = e.clientX - rect.left;
         let clickY = e.clientY - rect.top;
+        
+        // Consumir energía
+        playerEnergy -= FIREBALL_ENERGY_COST;
+        if (playerEnergy < 0) playerEnergy = 0;
         
         // Crear efecto de fuego instantáneamente donde se hizo click
         fireEffects.push({
@@ -650,6 +753,62 @@ canvas.addEventListener("click", (e) => {
         weaponCooldowns["fireball"] = weapons["fireball"].cooldown;
     }
 });
+
+// =====================================================
+// SISTEMA DE ESCUDO POST-RESPAWN
+// =====================================================
+function activateShield() {
+    // Limpiar timeout anterior si existe
+    if (shieldTimeoutId !== null) {
+        clearTimeout(shieldTimeoutId);
+    }
+    
+    hasShield = true;
+    shieldStartTime = Date.now();
+    shieldTime = SHIELD_DURATION;
+    
+    // Auto-desactivar escudo después de 3 segundos
+    shieldTimeoutId = setTimeout(() => {
+        hasShield = false;
+        shieldTimeoutId = null;
+    }, SHIELD_DURATION);
+}
+
+function deactivateShield() {
+    hasShield = false;
+    shieldTime = 0;
+    if (shieldTimeoutId !== null) {
+        clearTimeout(shieldTimeoutId);
+        shieldTimeoutId = null;
+    }
+}
+
+// =====================================================
+// SISTEMA DE DASH
+// =====================================================
+function performDash() {
+    // Determinar dirección del dash basada en las teclas presionadas
+    let dirX = 0;
+    let dirY = 0;
+    
+    if (keys["w"] || keys["W"] || keys["ArrowUp"]) dirY -= 1;
+    if (keys["s"] || keys["S"] || keys["ArrowDown"]) dirY += 1;
+    if (keys["a"] || keys["A"] || keys["ArrowLeft"]) dirX -= 1;
+    if (keys["d"] || keys["D"] || keys["ArrowRight"]) dirX += 1;
+    
+    // Si no hay dirección, usar la última dirección o hacia la derecha
+    if (dirX === 0 && dirY === 0) {
+        dirX = 1;
+    }
+    
+    // Normalizar dirección
+    let magnitude = Math.sqrt(dirX * dirX + dirY * dirY);
+    dashDirection.x = dirX / magnitude;
+    dashDirection.y = dirY / magnitude;
+    
+    isDashing = true;
+    dashFrames = 0;
+}
 
 function autoAimToClosestEnemy() {
     let weapon = weapons["bow"];
@@ -949,14 +1108,40 @@ function fireFireball() {
 // MOVIMIENTO LOCAL
 // =====================================================
 function updateMovement() {
-    // WASD
-    if (keys["w"] || keys["W"] || keys["ArrowUp"]) pos.y -= speed;
-    if (keys["s"] || keys["S"] || keys["ArrowDown"]) pos.y += speed;
-    if (keys["a"] || keys["A"] || keys["ArrowLeft"]) pos.x -= speed;
-    if (keys["d"] || keys["D"] || keys["ArrowRight"]) pos.x += speed;
+    // Actualizar dash
+    if (isDashing) {
+        pos.x += dashDirection.x * dashSpeed;
+        pos.y += dashDirection.y * dashSpeed;
+        dashFrames++;
+        
+        if (dashFrames >= dashDuration) {
+            isDashing = false;
+            dashFrames = 0;
+            dashCooldown = DASH_COOLDOWN;
+        }
+    }
+    
+    // WASD (solo si no está haciendo dash)
+    if (!isDashing) {
+        if (keys["w"] || keys["W"] || keys["ArrowUp"]) pos.y -= speed;
+        if (keys["s"] || keys["S"] || keys["ArrowDown"]) pos.y += speed;
+        if (keys["a"] || keys["A"] || keys["ArrowLeft"]) pos.x -= speed;
+        if (keys["d"] || keys["D"] || keys["ArrowRight"]) pos.x += speed;
+    }
+    
+    // Reducir cooldown del dash
+    if (dashCooldown > 0) {
+        dashCooldown--;
+    }
+    
+    // Regenerar energía
+    playerEnergy += ENERGY_REGEN_RATE;
+    if (playerEnergy > MAX_ENERGY) {
+        playerEnergy = MAX_ENERGY;
+    }
 
-    pos.x = Math.max(15, Math.min(canvas.width - 15, pos.x));
-    pos.y = Math.max(15, Math.min(canvas.height - 15, pos.y));
+    pos.x = Math.max(20, Math.min(canvas.width - 20, pos.x));
+    pos.y = Math.max(20, Math.min(canvas.height - 20, pos.y));
 }
 
 // =====================================================
@@ -999,11 +1184,20 @@ function startGameLoop() {
                 // Crear efecto de desintegración cuando un jugador desaparece
                 createDisintegrationEffect(smoothPlayers[id].x, smoothPlayers[id].y, smoothPlayers[id].color);
                 
-                // Incrementar killstreak si fuimos nosotros quien eliminó
-                if (lastKillTime && Date.now() - lastKillTime < 500) {
-                    killStreak++;
-                    lastKillTime = Date.now();
-                }
+                // Incrementar killstreak solo si fuimos nosotros quien eliminó a este jugador
+                // Verificar en los impactos recientes si fuimos el atacante
+                get(ref(db, "impacts")).then(snapshot => {
+                    const impactsData = snapshot.val() || {};
+                    for (let impactId in impactsData) {
+                        let impact = impactsData[impactId];
+                        // Si fuimos nosotros quien atacó a este jugador recientemente
+                        if (impact.attackerId === myId && impact.targetId === id && Date.now() - impact.timestamp < 1000) {
+                            killStreak++;
+                            lastKillTime = Date.now();
+                            break;
+                        }
+                    }
+                }).catch(err => console.error("Error al verificar kills:", err));
                 
                 delete smoothPlayers[id];
             }
@@ -1051,10 +1245,17 @@ function startGameLoop() {
         for (let id in impactsData) {
             let impact = impactsData[id];
             
-            // Aplicar daño si el impacto es dirigido a nosotros
+            // NOTA: El killstreak se incrementa cuando el jugador es eliminado (health <= 0)
+            // No aquí, porque aquí se cuenta cada impacto/daño
+            // Se incrementa correctamente en el listener de players cuando detecta que un jugador desapareció
+            
+            // Aplicar daño si el impacto es dirigido a nosotros (pero no si tiene escudo)
             if (impact.targetId === myId && impact.damage && !impact.processed) {
-                playerHealth -= impact.damage;
-                if (playerHealth < 0) playerHealth = 0;
+                // No aplicar daño si tiene escudo activo
+                if (!hasShield) {
+                    playerHealth -= impact.damage;
+                    if (playerHealth < 0) playerHealth = 0;
+                }
                 
                 // Marcar como procesado
                 set(ref(db, "impacts/" + id + "/processed"), true).catch(err => console.error("Error al marcar impacto:", err));
@@ -1101,9 +1302,13 @@ function startGameLoop() {
                     // Respawnear después de 4 segundos
                     setTimeout(() => {
                         playerHealth = 500;
+                        playerEnergy = MAX_ENERGY;
                         pos = { x: 600, y: 400 };
                         gameStarted = true;
                         isEliminated = false;
+                        
+                        // Activar escudo post-respawn
+                        activateShield();
                         
                         // Registrar de nuevo en Firebase
                         set(ref(db, "players/" + myId), {
@@ -1183,15 +1388,18 @@ function startGameLoop() {
         for (let id in fireballsData) {
             let fireball = fireballsData[id];
             
-            // Aplicar daño si la bola de fuego nos golpea
+            // Aplicar daño si la bola de fuego nos golpea (pero no si tiene escudo)
             if (fireball.damage && !fireball.processed) {
                 let dx = fireball.x - pos.x;
                 let dy = fireball.y - pos.y;
                 let dist = Math.sqrt(dx * dx + dy * dy);
                 
                 if (dist < 60) { // Radio de daño de la bola de fuego
-                    playerHealth -= fireball.damage;
-                    if (playerHealth < 0) playerHealth = 0;
+                    // No aplicar daño si tiene escudo activo
+                    if (!hasShield) {
+                        playerHealth -= fireball.damage;
+                        if (playerHealth < 0) playerHealth = 0;
+                    }
                     
                     // Marcar como procesado
                     set(ref(db, "fireballs/" + id + "/processed"), true).catch(err => console.error("Error al marcar fireball:", err));
@@ -1263,6 +1471,34 @@ function draw() {
             ctx.beginPath();
             ctx.arc(p.x, p.y, 17, 0, Math.PI * 2);
             ctx.stroke();
+            
+            // Efecto de escudo post-respawn
+            if (hasShield) {
+                let shieldProgress = (Date.now() - shieldStartTime) / SHIELD_DURATION;
+                let shieldOpacity = Math.max(0, 1 - shieldProgress);
+                let shieldRadius = 25 + Math.sin(Date.now() / 100) * 3;
+                
+                // Aura azul pulsante del escudo
+                ctx.strokeStyle = `rgba(0, 200, 255, ${shieldOpacity * 0.8})`;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, shieldRadius, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Círculos adicionales del escudo
+                ctx.strokeStyle = `rgba(100, 220, 255, ${shieldOpacity * 0.5})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, shieldRadius - 5, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Texto del escudo
+                ctx.fillStyle = `rgba(0, 200, 255, ${shieldOpacity})`;
+                ctx.font = "bold 12px Arial";
+                ctx.textAlign = "center";
+                const shieldTimeRemaining = Math.max(0, SHIELD_DURATION - (Date.now() - shieldStartTime));
+                ctx.fillText(`🛡️ ${(shieldTimeRemaining / 1000).toFixed(1)}s`, p.x, p.y + 45);
+            }
             
             // Efecto de ataque
             if (isAttacking && targetEnemy) {
@@ -1620,6 +1856,13 @@ function draw() {
         ctx.strokeText(`🔥 KILLSTREAK x${killStreak}`, canvas.width / 2, 80);
     }
     
+    // Mostrar estado del dash
+    ctx.fillStyle = isDashing ? "rgba(0, 255, 255, 0.9)" : "rgba(100, 100, 100, 0.7)";
+    ctx.font = "bold 14px Arial";
+    ctx.textAlign = "left";
+    const dashText = dashCooldown > 0 ? `DASH: ${(dashCooldown / DASH_COOLDOWN * 100).toFixed(0)}%` : "DASH: LISTO";
+    ctx.fillText(dashText, 10, canvas.height - 30);
+    
     
     // Mostrar pantalla de eliminación
     if (isEliminated) {
@@ -1681,7 +1924,7 @@ function createDisintegrationEffect(x, y, color) {
 }
 
 // =====================================================
-// SISTEMA DE VIDA
+// SISTEMA DE VIDA Y ENERGÍA
 // =====================================================
 function updateHealthBar() {
     const healthPercent = (playerHealth / 500) * 100;
@@ -1689,7 +1932,7 @@ function updateHealthBar() {
     const healthText = document.getElementById("healthText");
     
     healthBarFill.style.width = healthPercent + "%";
-    healthText.textContent = Math.max(0, playerHealth) + "/500";
+    healthText.textContent = Math.max(0, Math.floor(playerHealth)) + "/500";
     
     // Cambiar color según la vida
     if (healthPercent > 50) {
@@ -1699,6 +1942,15 @@ function updateHealthBar() {
     } else {
         healthBarFill.style.background = "linear-gradient(90deg, #ff0000, #cc0000)";
     }
+}
+
+function updateEnergyBar() {
+    const energyPercent = (playerEnergy / MAX_ENERGY) * 100;
+    const energyBarFill = document.getElementById("energyBarFill");
+    const energyText = document.getElementById("energyText");
+    
+    energyBarFill.style.width = energyPercent + "%";
+    energyText.textContent = Math.floor(playerEnergy) + "/" + MAX_ENERGY;
 }
 
 // =====================================================
@@ -1720,6 +1972,8 @@ function loop() {
     }
     draw(); // Siempre dibujar (incluso cuando está eliminado)
     updateInventoryUI(); // Actualizar cooldown visual en inventario
+    updateHealthBar(); // Actualizar barra de vida
+    updateEnergyBar(); // Actualizar barra de energía
     requestAnimationFrame(loop);
 }
 
@@ -1824,15 +2078,8 @@ function listenToChat() {
         }
         
         // Detectar cuando alguien es eliminado y actualizar killstreak
-        msgArray.forEach(m => {
-            if (m.message && m.message.includes("ha eliminado a") && m.message.includes(myUsername)) {
-                // Si fuimos nosotros quien eliminó
-                if (m.message.startsWith(myUsername)) {
-                    killStreak++;
-                    lastKillTime = Date.now();
-                }
-            }
-        });
+        // NOTA: El killstreak se actualiza en el listener de impactos, no aquí
+        // Esta sección solo es para mostrar los mensajes, no para contar kills
         
         // Mostrar últimos 20 mensajes
         chatMessagesDiv.innerHTML = msgArray.slice(-20).map(m => 
@@ -1859,6 +2106,8 @@ window.addEventListener("beforeunload", () => {
     if (myId) {
         remove(ref(db, "players/" + myId));
     }
+    // Limpiar escudo para evitar bugs de inmortalidad infinita
+    deactivateShield();
 });
 
 </script>
