@@ -5,7 +5,7 @@
       "emoji": "👊",
       "range": 150,
       "speed": 8,
-      "cooldown": 30,
+      "cooldown": 0,
       "damage": 25,
       "energyCost": 0,
       "color": "rgba(255, 100, 100, 0.8)",
@@ -39,7 +39,7 @@
       "range": 300,
       "speed": 6,
       "cooldown": 60,
-      "damage": 60000,
+      "damage": 60,
       "energyCost": 30,
       "color": "rgba(255, 100, 0, 0.9)",
       "description": "Arma poderosa que consume energía"

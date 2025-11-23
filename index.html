@@ -8,11 +8,14 @@
     overflow:hidden; 
     background:#111; 
     font-family: Arial, sans-serif;
+    width: 100vw;
+    height: 100vh;
   }
   canvas { 
     background:#1e1e1e; 
     display:block; 
-    margin:0 auto; 
+    width: 100vw;
+    height: 100vh;
   }
   #loginScreen {
     position: fixed;
@@ -307,6 +310,35 @@
     right: 5px;
     text-align: right;
   }
+  #levelBar {
+    position: fixed;
+    top: 130px;
+    left: 10px;
+    width: 150px;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #ffd700;
+    border-radius: 10px;
+    padding: 3px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+  }
+  #levelBarFill {
+    height: 100%;
+    background: linear-gradient(90deg, #ffd700, #ffaa00);
+    border-radius: 8px;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+  }
+  #levelText {
+    color: #ffd700;
+    font-weight: bold;
+    font-size: 11px;
+    position: absolute;
+    right: 5px;
+    text-align: right;
+  }
 </style>
 </head>
 <body>
@@ -340,6 +372,11 @@
 <div id="energyBar" class="">
   <div id="energyBarFill" style="width: 100%; background: linear-gradient(90deg, #0099ff, #00ccff);"></div>
   <div id="energyText">100/100</div>
+</div>
+
+<div id="levelBar" class="">
+  <div id="levelBarFill" style="width: 100%; background: linear-gradient(90deg, #ffd700, #ffaa00);"></div>
+  <div id="levelText">⭐ NIVEL 1 | Kills: 0/5</div>
 </div>
 
 <div id="inventoryBar" class="">
@@ -405,6 +442,14 @@ const db = getDatabase(app);
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
+// Hacer el canvas responsivo
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
 let myId = null;
 let myUsername = null;
 let myColor = `hsl(${Math.random()*360}, 70%, 60%)`;
@@ -424,6 +469,13 @@ let killStreak = 0; // Contador de muertes consecutivas
 let lastKillTime = 0; // Timestamp del último asesinato
 const KILLSTREAK_TIMEOUT = 10000; // 10 segundos para mantener la racha activa
 let totalKills = 0; // Contador total de kills en la sesión
+
+// Sistema de Niveles
+let currentLevel = 1;
+let killsInLevel = 0;
+let killsRequiredForNextLevel = 5; // Aumenta con cada nivel
+let levelStartTime = 0;
+let levelEndTime = 0;
 
 // Sistema de Dash
 let isDashing = false;
@@ -466,10 +518,42 @@ let syncedArrows = [];
 let syncedFireballs = [];
 let xPressTime = 0;
 
+// Control de foco de ventana
+let windowHasFocus = true;
+let lastKillMessageId = null; // Para evitar duplicados
+
+// Sistema de Animaciones de Ataque
+let isAttackAnimating = false;
+let attackAnimationProgress = 0;
+let attackAnimationDuration = 300; // ms
+let attackAnimationStartTime = 0;
+let attackAnimationDirection = { x: 0, y: 0 };
+let attackAnimationDistance = 15; // Distancia a moverse
+
+// Sistema de Screen Shake
+let screenShakeIntensity = 0;
+let screenShakeX = 0;
+let screenShakeY = 0;
+const MAX_SHAKE_INTENSITY = 8; // Máxima intensidad del temblor
+const SHAKE_DECAY = 0.85; // Factor de decaimiento del temblor
+
 // Sistema de armas - Se carga desde weapons.json
 let currentWeapon = "fist"; // "fist", "sword", "bow" o "fireball"
 let weapons = {};
 let gameConfig = {};
+
+// Sistema de Mapa y Cámara
+const MAP_WIDTH = 4000;  // Mapa muy grande
+const MAP_HEIGHT = 3000;
+let cameraX = 0;
+let cameraY = 0;
+const CAMERA_SMOOTHING = 0.1; // Factor de suavizado de cámara
+
+// Sistema de Agua
+const BORDER_WIDTH = 200;
+const WATER_SPEED_MULTIPLIER = 0.5; // Velocidad al 50% en agua
+let waterParticles = [];
+let isInWater = false;
 
 // Cargar configuración desde JSON
 async function loadWeaponsConfig() {
@@ -616,10 +700,27 @@ async function startGame() {
     await remove(ref(db, "players/" + myId));
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Registrar cuenta en Firebase
+    // Cargar kills y nivel guardados de Firebase ANTES de registrar
+    let savedKills = 0;
+    let savedLevel = 1;
+    try {
+        const killsSnapshot = await get(ref(db, "cuentas/" + myId + "/kills"));
+        savedKills = killsSnapshot.val() || 0;
+        
+        const levelSnapshot = await get(ref(db, "cuentas/" + myId + "/level"));
+        savedLevel = levelSnapshot.val() || 1;
+    } catch (err) {
+        console.error("Error al cargar kills/nivel:", err);
+        savedKills = 0;
+        savedLevel = 1;
+    }
+
+    // Registrar cuenta en Firebase preservando kills y nivel
     await set(ref(db, "cuentas/" + myId), {
         username: myUsername,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        kills: savedKills,
+        level: savedLevel
     });
 
     // Ocultar login y mostrar juego
@@ -629,10 +730,16 @@ async function startGame() {
     document.getElementById("healthBar").classList.remove("hidden");
     currentUserSpan.textContent = myUsername;
 
-    // Reinicializar contador de kills
-    totalKills = 0;
+    // Establecer kills y nivel cargados
+    totalKills = savedKills;
     killStreak = 0;
     updateKillCounter();
+    
+    // Inicializar nivel con el valor guardado
+    currentLevel = savedLevel;
+    killsInLevel = 0;
+    killsRequiredForNextLevel = 5 + (currentLevel - 1) * 2;
+    levelStartTime = Date.now();
 
     gameStarted = true;
     startGameLoop();
@@ -745,10 +852,14 @@ document.addEventListener("mousemove", (e) => {
 
 // Click del mouse para lanzar bola de fuego
 canvas.addEventListener("click", (e) => {
-    if (gameStarted && !chatOpen && currentWeapon === "fireball" && weaponCooldowns["fireball"] <= 0 && playerEnergy >= FIREBALL_ENERGY_COST) {
+    if (gameStarted && !chatOpen && !isEliminated && currentWeapon === "fireball" && weaponCooldowns["fireball"] <= 0 && playerEnergy >= FIREBALL_ENERGY_COST) {
         let rect = canvas.getBoundingClientRect();
         let clickX = e.clientX - rect.left;
         let clickY = e.clientY - rect.top;
+        
+        // Convertir coordenadas de pantalla a coordenadas del mapa
+        let mapClickX = clickX + cameraX;
+        let mapClickY = clickY + cameraY;
         
         // Consumir energía
         playerEnergy -= FIREBALL_ENERGY_COST;
@@ -756,8 +867,8 @@ canvas.addEventListener("click", (e) => {
         
         // Crear efecto de fuego instantáneamente donde se hizo click
         fireEffects.push({
-            x: clickX,
-            y: clickY,
+            x: mapClickX,
+            y: mapClickY,
             life: 500,
             maxLife: 500,
             radius: 50
@@ -766,8 +877,8 @@ canvas.addEventListener("click", (e) => {
         // Enviar efecto de fuego a Firebase
         const fireballId = "fireball_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
         set(ref(db, "fireballs/" + fireballId), {
-            x: clickX,
-            y: clickY,
+            x: mapClickX,
+            y: mapClickY,
             angle: 0,
             speed: 0,
             playerId: myId,
@@ -865,6 +976,9 @@ function autoAimToClosestEnemy() {
 // SISTEMA DE ATAQUE
 // =====================================================
 function performAttack() {
+    // No atacar si estás muerto
+    if (isEliminated) return;
+    
     let weapon = weapons[currentWeapon];
     
     // Encontrar enemigo más cercano
@@ -889,10 +1003,34 @@ function performAttack() {
         isAttacking = true;
         targetEnemy = closestEnemy;
         weaponCooldowns[currentWeapon] = weapon.cooldown;
+        
+        // Iniciar animación de ataque
+        isAttackAnimating = true;
+        attackAnimationStartTime = Date.now();
+        attackAnimationProgress = 0;
+        
+        // Iniciar screen shake
+        screenShakeIntensity = MAX_SHAKE_INTENSITY;
+        
+        // Calcular dirección del ataque
+        let dx = closestEnemy.dx;
+        let dy = closestEnemy.dy;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance > 0) {
+            attackAnimationDirection.x = dx / distance;
+            attackAnimationDirection.y = dy / distance;
+        }
     }
 }
 
 function updateAttack() {
+    // Cancelar ataque si estás muerto
+    if (isEliminated) {
+        isAttacking = false;
+        targetEnemy = null;
+        return;
+    }
+    
     if (isAttacking && targetEnemy) {
         let weapon = weapons[currentWeapon];
         let dx = targetEnemy.enemy.x - pos.x;
@@ -954,7 +1092,7 @@ function updateAttack() {
         arrow.y += Math.sin(arrow.angle) * arrow.speed;
         
         // Eliminar si sale del mapa
-        if (arrow.x < 0 || arrow.x > canvas.width || arrow.y < 0 || arrow.y > canvas.height) {
+        if (arrow.x < 0 || arrow.x > MAP_WIDTH || arrow.y < 0 || arrow.y > MAP_HEIGHT) {
             arrows.splice(i, 1);
             continue;
         }
@@ -1133,6 +1271,45 @@ function fireFireball() {
 // MOVIMIENTO LOCAL
 // =====================================================
 function updateMovement() {
+    // Actualizar screen shake
+    if (screenShakeIntensity > 0) {
+        screenShakeX = (Math.random() - 0.5) * screenShakeIntensity * 2;
+        screenShakeY = (Math.random() - 0.5) * screenShakeIntensity * 2;
+        screenShakeIntensity *= SHAKE_DECAY;
+        
+        if (screenShakeIntensity < 0.1) {
+            screenShakeIntensity = 0;
+            screenShakeX = 0;
+            screenShakeY = 0;
+        }
+    }
+    
+    // Actualizar animación de ataque
+    if (isAttackAnimating) {
+        let elapsed = Date.now() - attackAnimationStartTime;
+        attackAnimationProgress = Math.min(elapsed / attackAnimationDuration, 1);
+        
+        // Movimiento hacia adelante y atrás (forma de S)
+        let animationCurve = Math.sin(attackAnimationProgress * Math.PI);
+        let moveDistance = attackAnimationDistance * animationCurve;
+        
+        // Aplicar movimiento de animación
+        pos.x += attackAnimationDirection.x * moveDistance * 0.05;
+        pos.y += attackAnimationDirection.y * moveDistance * 0.05;
+        
+        // Finalizar animación
+        if (attackAnimationProgress >= 1) {
+            isAttackAnimating = false;
+        }
+    }
+    
+    // Detectar si estamos en agua
+    isInWater = pos.x < BORDER_WIDTH || pos.x > MAP_WIDTH - BORDER_WIDTH || 
+               pos.y < BORDER_WIDTH || pos.y > MAP_HEIGHT - BORDER_WIDTH;
+    
+    // Calcular velocidad actual (ralentizada si está en agua)
+    const currentSpeed = isInWater ? speed * WATER_SPEED_MULTIPLIER : speed;
+    
     // Actualizar dash
     if (isDashing) {
         pos.x += dashDirection.x * dashSpeed;
@@ -1148,10 +1325,20 @@ function updateMovement() {
     
     // WASD (solo si no está haciendo dash)
     if (!isDashing) {
-        if (keys["w"] || keys["W"] || keys["ArrowUp"]) pos.y -= speed;
-        if (keys["s"] || keys["S"] || keys["ArrowDown"]) pos.y += speed;
-        if (keys["a"] || keys["A"] || keys["ArrowLeft"]) pos.x -= speed;
-        if (keys["d"] || keys["D"] || keys["ArrowRight"]) pos.x += speed;
+        let moveX = 0, moveY = 0;
+        
+        if (keys["w"] || keys["W"] || keys["ArrowUp"]) moveY -= currentSpeed;
+        if (keys["s"] || keys["S"] || keys["ArrowDown"]) moveY += currentSpeed;
+        if (keys["a"] || keys["A"] || keys["ArrowLeft"]) moveX -= currentSpeed;
+        if (keys["d"] || keys["D"] || keys["ArrowRight"]) moveX += currentSpeed;
+        
+        pos.x += moveX;
+        pos.y += moveY;
+        
+        // Crear partículas de agua si se está moviendo en agua
+        if (isInWater && (moveX !== 0 || moveY !== 0)) {
+            createWaterParticles(pos.x, pos.y, moveX, moveY);
+        }
     }
     
     // Reducir cooldown del dash
@@ -1165,8 +1352,9 @@ function updateMovement() {
         playerEnergy = MAX_ENERGY;
     }
 
-    pos.x = Math.max(20, Math.min(canvas.width - 20, pos.x));
-    pos.y = Math.max(20, Math.min(canvas.height - 20, pos.y));
+    // Limitar posición a los límites del mapa
+    pos.x = Math.max(20, Math.min(MAP_WIDTH - 20, pos.x));
+    pos.y = Math.max(20, Math.min(MAP_HEIGHT - 20, pos.y));
 }
 
 // =====================================================
@@ -1180,7 +1368,8 @@ function startGameLoop() {
                 y: pos.y,
                 color: myColor,
                 username: myUsername,
-                health: playerHealth
+                health: playerHealth,
+                level: currentLevel
             });
         }
     }, 150);
@@ -1198,8 +1387,12 @@ function startGameLoop() {
                     y: players[id].y,
                     color: players[id].color,
                     username: players[id].username,
-                    health: players[id].health
+                    health: players[id].health,
+                    level: players[id].level || 1
                 };
+            } else {
+                // Actualizar nivel si cambió
+                smoothPlayers[id].level = players[id].level || 1;
             }
         }
 
@@ -1260,13 +1453,7 @@ function startGameLoop() {
                 // Marcar como procesado para no contar múltiples veces
                 set(ref(db, "impacts/" + id + "/killProcessed"), true).catch(err => console.error("Error al marcar kill:", err));
                 
-                // Incrementar kills INMEDIATAMENTE
-                totalKills++;
-                killStreak++;
-                lastKillTime = Date.now();
-                updateKillCounter();
-                
-                // Enviar mensaje de kill al chat
+                // Enviar mensaje de kill al chat (el contador se incrementará desde el listener de chat)
                 const victimName = players[impact.targetId]?.username || "Desconocido";
                 const msgId = "msg_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
                 set(ref(db, "messages/" + msgId), {
@@ -1433,6 +1620,20 @@ function startGameLoop() {
                         if (playerHealth < 0) playerHealth = 0;
                     }
                     
+                    // Crear impacto para registrar el daño del fuego
+                    const impactId = "impact_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+                    set(ref(db, "impacts/" + impactId), {
+                        x: fireball.x,
+                        y: fireball.y,
+                        life: 20,
+                        maxLife: 20,
+                        damage: fireball.damage,
+                        targetId: myId,
+                        attackerId: fireball.playerId,
+                        timestamp: Date.now(),
+                        killProcessed: false
+                    }).catch(err => console.error("Error al enviar impacto de fuego:", err));
+                    
                     // Marcar como procesado
                     set(ref(db, "fireballs/" + id + "/processed"), true).catch(err => console.error("Error al marcar fireball:", err));
                 }
@@ -1485,15 +1686,57 @@ function interpolate() {
 // DIBUJAR
 // =====================================================
 function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Actualizar posición de la cámara para seguir al jugador
+    const targetCameraX = pos.x - canvas.width / 2;
+    const targetCameraY = pos.y - canvas.height / 2;
+    
+    cameraX += (targetCameraX - cameraX) * CAMERA_SMOOTHING;
+    cameraY += (targetCameraY - cameraY) * CAMERA_SMOOTHING;
+    
+    // Limitar la cámara a los bordes del mapa
+    cameraX = Math.max(0, Math.min(cameraX, MAP_WIDTH - canvas.width));
+    cameraY = Math.max(0, Math.min(cameraY, MAP_HEIGHT - canvas.height));
+    
+    // Dibujar fondo general (agua)
+    ctx.fillStyle = "#1a4d7a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Guardar el contexto y aplicar transformación de cámara con screen shake
+    ctx.save();
+    ctx.translate(-cameraX + screenShakeX, -cameraY + screenShakeY);
+    
+    // Dibujar el área del mapa con color original
+    ctx.fillStyle = "#1e1e1e";
+    ctx.fillRect(0, 0, MAP_WIDTH, MAP_HEIGHT);
+    
+    // Dibujar agua solo en los bordes
+    const BORDER_WIDTH = 200;
+    ctx.fillStyle = "#1a4d7a";
+    
+    // Borde superior
+    ctx.fillRect(0, 0, MAP_WIDTH, BORDER_WIDTH);
+    // Borde inferior
+    ctx.fillRect(0, MAP_HEIGHT - BORDER_WIDTH, MAP_WIDTH, BORDER_WIDTH);
+    // Borde izquierdo (sin sobreescribir las esquinas)
+    ctx.fillRect(0, BORDER_WIDTH, BORDER_WIDTH, MAP_HEIGHT - BORDER_WIDTH * 2);
+    // Borde derecho (sin sobreescribir las esquinas)
+    ctx.fillRect(MAP_WIDTH - BORDER_WIDTH, BORDER_WIDTH, BORDER_WIDTH, MAP_HEIGHT - BORDER_WIDTH * 2);
 
     for (let id in smoothPlayers) {
         let p = smoothPlayers[id];
 
+        // Calcular escala de animación de ataque
+        let playerScale = 1;
+        if (id === myId && isAttackAnimating) {
+            // Efecto de escala durante el ataque (pulso)
+            let pulseCurve = Math.sin(attackAnimationProgress * Math.PI);
+            playerScale = 1 + (pulseCurve * 0.15); // Aumenta hasta 15%
+        }
+
         // Cuerpo del jugador
         ctx.fillStyle = p.color;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 15, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 15 * playerScale, 0, Math.PI * 2);
         ctx.fill();
 
         // Borde si es el jugador local
@@ -1558,18 +1801,81 @@ function draw() {
             }
         }
 
-        // Nombre del jugador
-        ctx.fillStyle = "#fff";
+        // ===== BARRA DE INFORMACIÓN ESTILO LOL =====
+        const barWidth = 80;
+        const barHeight = 28;
+        const barX = p.x - barWidth / 2;
+        const barY = p.y - 55;
+        
+        // Círculo de nivel (lado izquierdo)
+        const levelCircleX = barX + 10;
+        const levelCircleY = barY + barHeight / 2;
+        const levelCircleRadius = 10;
+        
+        // Fondo del círculo de nivel
+        ctx.fillStyle = "rgba(200, 160, 0, 0.95)";
+        ctx.beginPath();
+        ctx.arc(levelCircleX, levelCircleY, levelCircleRadius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Borde del círculo
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(levelCircleX, levelCircleY, levelCircleRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Número del nivel
+        ctx.fillStyle = "#000";
         ctx.font = "bold 12px Arial";
         ctx.textAlign = "center";
-        const displayName = id === myId ? p.username + " (Tú)" : p.username;
-        ctx.fillText(displayName, p.x, p.y - 25);
+        ctx.textBaseline = "middle";
+        ctx.fillText(p.level || 1, levelCircleX, levelCircleY);
         
-        // Barra de vida
-        ctx.fillStyle = "rgba(255, 0, 0, 0.8)";
-        ctx.fillRect(p.x - 20, p.y - 40, 40, 5);
-        ctx.fillStyle = "rgba(0, 255, 0, 0.8)";
-        ctx.fillRect(p.x - 20, p.y - 40, (p.health / 500) * 40, 5);
+        // Nombre del jugador
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 11px Arial";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        const displayName = id === myId ? p.username + " (Tú)" : p.username;
+        const maxNameLength = 12;
+        const truncatedName = displayName.length > maxNameLength ? displayName.substring(0, maxNameLength - 1) + "." : displayName;
+        ctx.fillText(truncatedName, barX + 28, barY + 2);
+        
+        // Barra de vida (roja/verde)
+        const healthBarWidth = barWidth - 30;
+        const healthBarHeight = 6;
+        const healthBarX = barX + 28;
+        const healthBarY = barY + 14;
+        
+        // Fondo de la barra de vida (gris oscuro)
+        ctx.fillStyle = "rgba(50, 50, 50, 0.8)";
+        ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+        
+        // Barra de vida (gradiente rojo a verde)
+        const healthPercent = p.health / 500;
+        let healthColor;
+        if (healthPercent > 0.5) {
+            healthColor = "rgba(0, 255, 0, 0.9)"; // Verde
+        } else if (healthPercent > 0.25) {
+            healthColor = "rgba(255, 200, 0, 0.9)"; // Amarillo
+        } else {
+            healthColor = "rgba(255, 0, 0, 0.9)"; // Rojo
+        }
+        ctx.fillStyle = healthColor;
+        ctx.fillRect(healthBarX, healthBarY, healthBarWidth * Math.min(healthPercent, 1), healthBarHeight);
+        
+        // Borde de la barra de vida
+        ctx.strokeStyle = "rgba(200, 160, 0, 0.6)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+        
+        // Texto de vida
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 9px Arial";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "top";
+        ctx.fillText(Math.floor(p.health) + "/" + 500, barX + barWidth - 2, barY + 14);
     }
     
     // Dibujar impactos locales
@@ -1680,6 +1986,27 @@ function draw() {
         fire.life--;
         if (fire.life <= 0) {
             fireEffects.splice(i, 1);
+        }
+    }
+    
+    // Dibujar partículas de agua
+    for (let i = waterParticles.length - 1; i >= 0; i--) {
+        let particle = waterParticles[i];
+        let progress = 1 - (particle.life / particle.maxLife);
+        let opacity = particle.opacity * (1 - progress);
+        
+        ctx.fillStyle = `rgba(100, 200, 255, ${opacity})`;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Actualizar partícula
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+        particle.life--;
+        
+        if (particle.life <= 0) {
+            waterParticles.splice(i, 1);
         }
     }
     
@@ -1867,6 +2194,39 @@ function draw() {
         }
     }
     
+    // Restaurar contexto después de la transformación de cámara
+    ctx.restore();
+    
+    // Mostrar pantalla de eliminación (DESPUÉS de restore para que esté en pantalla fija)
+    if (isEliminated) {
+        const timeElapsed = Date.now() - eliminationTime;
+        const timeRemaining = Math.max(0, 4000 - timeElapsed);
+        const secondsRemaining = Math.ceil(timeRemaining / 1000);
+        
+        // Fondo oscuro
+        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Texto principal
+        ctx.fillStyle = "#ff0000";
+        ctx.font = "bold 60px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("¡HAS SIDO ELIMINADO!", canvas.width / 2, canvas.height / 2 - 60);
+        
+        // Nombre del atacante
+        ctx.fillStyle = "#ffff00";
+        ctx.font = "bold 30px Arial";
+        ctx.fillText(`Eliminado por: ${eliminatedByName}`, canvas.width / 2, canvas.height / 2 + 20);
+        
+        // Cuenta regresiva
+        ctx.fillStyle = "#00ffff";
+        ctx.font = "bold 40px Arial";
+        ctx.fillText(`Respawneando en: ${secondsRemaining}s`, canvas.width / 2, canvas.height / 2 + 80);
+    }
+    
+    // ===== ELEMENTOS DE UI EN PANTALLA FIJA (DESPUÉS DE RESTORE) =====
+    
     // Mostrar arma actual
     let weapon = weapons[currentWeapon];
     ctx.fillStyle = weapon.color;
@@ -1895,37 +2255,33 @@ function draw() {
     const dashText = dashCooldown > 0 ? `DASH: ${(dashCooldown / DASH_COOLDOWN * 100).toFixed(0)}%` : "DASH: LISTO";
     ctx.fillText(dashText, 10, canvas.height - 30);
     
-    
-    // Mostrar pantalla de eliminación
-    if (isEliminated) {
-        const timeElapsed = Date.now() - eliminationTime;
-        const timeRemaining = Math.max(0, 4000 - timeElapsed);
-        const secondsRemaining = Math.ceil(timeRemaining / 1000);
-        
-        // Fondo oscuro
-        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Texto principal
-        ctx.fillStyle = "#ff0000";
-        ctx.font = "bold 60px Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("¡HAS SIDO ELIMINADO!", canvas.width / 2, canvas.height / 2 - 60);
-        
-        // Nombre del atacante
-        ctx.fillStyle = "#ffff00";
-        ctx.font = "bold 30px Arial";
-        ctx.fillText(`Eliminado por: ${eliminatedByName}`, canvas.width / 2, canvas.height / 2 + 20);
-        
-        // Cuenta regresiva
-        ctx.fillStyle = "#00ffff";
-        ctx.font = "bold 40px Arial";
-        ctx.fillText(`Respawneando en: ${secondsRemaining}s`, canvas.width / 2, canvas.height / 2 + 80);
-    }
-    
     // Actualizar barra de vida en el DOM
     updateHealthBar();
+}
+
+// =====================================================
+// PARTÍCULAS DE AGUA
+// =====================================================
+function createWaterParticles(x, y, moveX, moveY) {
+    // Crear 2-4 partículas por frame
+    const particleCount = Math.random() < 0.5 ? 2 : 3;
+    
+    for (let i = 0; i < particleCount; i++) {
+        // Dirección opuesta al movimiento (detrás del jugador)
+        const angle = Math.atan2(-moveY, -moveX) + (Math.random() - 0.5) * 0.6;
+        const speed = 1 + Math.random() * 2;
+        
+        waterParticles.push({
+            x: x + (Math.random() - 0.5) * 20,
+            y: y + (Math.random() - 0.5) * 20,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 30,
+            maxLife: 30,
+            size: 3 + Math.random() * 4,
+            opacity: 0.6
+        });
+    }
 }
 
 // =====================================================
@@ -1985,6 +2341,15 @@ function updateEnergyBar() {
     energyText.textContent = Math.floor(playerEnergy) + "/" + MAX_ENERGY;
 }
 
+function updateLevelBar() {
+    const levelPercent = (killsInLevel / killsRequiredForNextLevel) * 100;
+    const levelBarFill = document.getElementById("levelBarFill");
+    const levelText = document.getElementById("levelText");
+    
+    levelBarFill.style.width = Math.min(levelPercent, 100) + "%";
+    levelText.textContent = `⭐ NIVEL ${currentLevel} | ${killsInLevel}/${killsRequiredForNextLevel}`;
+}
+
 // =====================================================
 // CONTADOR DE JUGADORES ONLINE
 // =====================================================
@@ -2001,6 +2366,47 @@ function updateKillCounter() {
 }
 
 // =====================================================
+// SISTEMA DE NIVELES
+// =====================================================
+function checkLevelUp() {
+    if (killsInLevel >= killsRequiredForNextLevel) {
+        levelUp();
+    }
+}
+
+function levelUp() {
+    currentLevel++;
+    killsInLevel = 0;
+    killsRequiredForNextLevel = 5 + (currentLevel - 1) * 2; // Aumenta: 5, 7, 9, 11...
+    levelStartTime = Date.now();
+    
+    // Aumentar dificultad
+    increaseDifficulty();
+    
+    // Guardar nivel en Firebase
+    set(ref(db, "cuentas/" + myId + "/level"), currentLevel).catch(err => console.error("Error al guardar nivel:", err));
+    
+    // Mostrar mensaje en chat
+    const msgId = "msg_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+    set(ref(db, "messages/" + msgId), {
+        username: "⭐ NIVEL",
+        message: `${myUsername} alcanzó el NIVEL ${currentLevel}! 🎉`,
+        color: "#ffff00",
+        timestamp: Date.now()
+    }).catch(err => console.error("Error al enviar mensaje de nivel:", err));
+}
+
+function increaseDifficulty() {
+    // Aumentar daño de armas en 10%
+    for (let weapon in weapons) {
+        weapons[weapon].damage = Math.floor(weapons[weapon].damage * 1.1);
+    }
+    
+    // Aumentar velocidad del jugador en 5%
+    speed *= 1.05;
+}
+
+// =====================================================
 // LOOP
 // =====================================================
 function loop() {
@@ -2013,6 +2419,7 @@ function loop() {
     updateInventoryUI(); // Actualizar cooldown visual en inventario
     updateHealthBar(); // Actualizar barra de vida
     updateEnergyBar(); // Actualizar barra de energía
+    updateLevelBar(); // Actualizar barra de nivel
     requestAnimationFrame(loop);
 }
 
@@ -2119,12 +2526,20 @@ function listenToChat() {
         // Detectar cuando YO elimino a alguien (mensaje del SISTEMA con mi nombre)
         msgArray.forEach(msg => {
             if (msg.username === "⚔️ SISTEMA" && msg.message.includes("ha eliminado a") && msg.message.startsWith(myUsername)) {
-                // Verificar si ya contamos este kill
-                if (!msg.killCounted) {
+                // Verificar si ya contamos este kill (doble verificación)
+                if (!msg.killCounted && msg.key !== lastKillMessageId) {
+                    lastKillMessageId = msg.key; // Guardar ID para evitar duplicados
                     totalKills++;
                     killStreak++;
+                    killsInLevel++;
                     lastKillTime = Date.now();
                     updateKillCounter();
+                    
+                    // Verificar si subes de nivel
+                    checkLevelUp();
+                    
+                    // Guardar kills en la base de datos
+                    set(ref(db, "cuentas/" + myId + "/kills"), totalKills).catch(err => console.error("Error al guardar kills:", err));
                     
                     // Marcar como contado
                     set(ref(db, "messages/" + msg.key + "/killCounted"), true).catch(err => console.error("Error al marcar kill contado:", err));
@@ -2149,6 +2564,28 @@ function listenToChat() {
         chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
     });
 }
+
+// =====================================================
+// CONTROL DE FOCO DE VENTANA
+// =====================================================
+window.addEventListener("focus", () => {
+    windowHasFocus = true;
+    // Resincronizar posición al volver
+    if (gameStarted && myId) {
+        set(ref(db, "players/" + myId), {
+            x: pos.x,
+            y: pos.y,
+            color: myColor,
+            health: playerHealth,
+            username: myUsername,
+            level: currentLevel
+        }).catch(err => console.error("Error al resincronizar:", err));
+    }
+});
+
+window.addEventListener("blur", () => {
+    windowHasFocus = false;
+});
 
 // =====================================================
 // BORRAR PLAYER AL SALIR
