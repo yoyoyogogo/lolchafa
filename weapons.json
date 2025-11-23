@@ -5,7 +5,7 @@
       "emoji": "👊",
       "range": 150,
       "speed": 8,
-      "cooldown": 30,
+      "cooldown": 0,
       "damage": 25,
       "energyCost": 0,
       "color": "rgba(255, 100, 100, 0.8)",
