@@ -621,6 +621,15 @@ function loadDefaultWeapons() {
             damage: 60,
             energyCost: 30,
             color: "rgba(255, 100, 0, 0.9)"
+        },
+        boomerang: {
+            name: "Boomerang",
+            range: 350,
+            speed: 10,
+            cooldown: 40,
+            damage: 40,
+            energyCost: 0,
+            color: "rgba(200, 100, 255, 0.8)"
         }
     };
     gameConfig = {
@@ -794,7 +803,10 @@ document.addEventListener("keydown", e => {
             xPressTime = Date.now();
             isManualAiming = true;
             isAiming = true;
-        } else if (!isAttacking && weaponCooldowns[currentWeapon] <= 0 && currentWeapon !== "bow" && currentWeapon !== "fireball") {
+        } else if (currentWeapon === "boomerang" && weaponCooldowns["boomerang"] <= 0 && gameStarted && !isEliminated) {
+            // Lanzar boomerang hacia el enemigo más cercano
+            launchBoomerangToClosestEnemy();
+        } else if (!isAttacking && weaponCooldowns[currentWeapon] <= 0 && currentWeapon !== "bow" && currentWeapon !== "fireball" && currentWeapon !== "boomerang") {
             performAttack();
         }
     }
@@ -885,6 +897,7 @@ canvas.addEventListener("click", (e) => {
         let angle = Math.atan2(dy, dx);
         
         // Crear boomerang local
+        const boomerangId = "boomerang_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
         const boomerangData = {
             x: pos.x,
             y: pos.y,
@@ -899,13 +912,13 @@ canvas.addEventListener("click", (e) => {
             playerId: myId,
             timestamp: Date.now(),
             hasHit: false,
-            hitPlayers: []
+            hitPlayers: [],
+            firebaseId: boomerangId
         };
         
         boomerangs.push(boomerangData);
         
         // Enviar boomerang a Firebase
-        const boomerangId = "boomerang_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
         set(ref(db, "boomerangs/" + boomerangId), {
             x: boomerangData.x,
             y: boomerangData.y,
@@ -1088,6 +1101,71 @@ function performAttack() {
     }
 }
 
+// Lanzar boomerang hacia el enemigo más cercano
+function launchBoomerangToClosestEnemy() {
+    if (isEliminated) return;
+    
+    let weapon = weapons["boomerang"];
+    
+    // Encontrar enemigo más cercano
+    let closestEnemy = null;
+    let closestDistance = weapon.range;
+    
+    for (let id in smoothPlayers) {
+        if (id === myId) continue;
+        
+        let enemy = smoothPlayers[id];
+        let dx = enemy.x - pos.x;
+        let dy = enemy.y - pos.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < closestDistance) {
+            closestDistance = distance;
+            closestEnemy = { x: enemy.x, y: enemy.y, dx, dy, distance };
+        }
+    }
+    
+    if (closestEnemy) {
+        // Calcular ángulo hacia el enemigo
+        let angle = Math.atan2(closestEnemy.dy, closestEnemy.dx);
+        
+        // Crear boomerang local
+        const boomerangId = "boomerang_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+        const boomerangData = {
+            x: pos.x,
+            y: pos.y,
+            angle: angle,
+            distance: Math.min(closestEnemy.distance, 350), // Limitar a rango máximo
+            speed: 10,
+            maxDistance: Math.min(closestEnemy.distance, 350),
+            returning: false,
+            returnStartX: 0,
+            returnStartY: 0,
+            traveledDistance: 0,
+            playerId: myId,
+            timestamp: Date.now(),
+            hasHit: false,
+            hitPlayers: [],
+            firebaseId: boomerangId
+        };
+        
+        boomerangs.push(boomerangData);
+        
+        // Enviar boomerang a Firebase
+        set(ref(db, "boomerangs/" + boomerangId), {
+            x: boomerangData.x,
+            y: boomerangData.y,
+            angle: boomerangData.angle,
+            distance: boomerangData.distance,
+            speed: boomerangData.speed,
+            playerId: myId,
+            timestamp: Date.now()
+        }).catch(err => console.error("Error al enviar boomerang:", err));
+        
+        weaponCooldowns["boomerang"] = weapon.cooldown;
+    }
+}
+
 function updateAttack() {
     // Cancelar ataque si estás muerto
     if (isEliminated) {
@@ -1216,6 +1294,20 @@ function updateAttack() {
                 boomerang.returnStartX = boomerang.x;
                 boomerang.returnStartY = boomerang.y;
                 boomerang.traveledDistance = 0;
+                
+                // Actualizar en Firebase que está regresando
+                if (boomerang.firebaseId) {
+                    set(ref(db, "boomerangs/" + boomerang.firebaseId), {
+                        x: boomerang.x,
+                        y: boomerang.y,
+                        angle: boomerang.angle,
+                        distance: boomerang.distance,
+                        speed: boomerang.speed,
+                        playerId: myId,
+                        timestamp: boomerang.timestamp,
+                        returning: true
+                    }).catch(err => console.error("Error al actualizar boomerang:", err));
+                }
             }
             
             // Detectar colisión con enemigos en la ida
@@ -1265,6 +1357,9 @@ function updateAttack() {
                 boomerang.traveledDistance += boomerang.speed;
             } else {
                 // El boomerang regresó al jugador
+                if (boomerang.firebaseId) {
+                    remove(ref(db, "boomerangs/" + boomerang.firebaseId)).catch(err => console.error("Error al eliminar boomerang:", err));
+                }
                 boomerangs.splice(i, 1);
                 continue;
             }
@@ -1308,6 +1403,9 @@ function updateAttack() {
         
         // Eliminar si sale del mapa
         if (boomerang.x < 0 || boomerang.x > MAP_WIDTH || boomerang.y < 0 || boomerang.y > MAP_HEIGHT) {
+            if (boomerang.firebaseId) {
+                remove(ref(db, "boomerangs/" + boomerang.firebaseId)).catch(err => console.error("Error al eliminar boomerang:", err));
+            }
             boomerangs.splice(i, 1);
         }
     }
